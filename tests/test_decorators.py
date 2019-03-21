@@ -10,6 +10,7 @@ class TestDecorators(TestCase):
         :return: Test Passed
         """
         with self.assertRaises(TypeError):
+            # These functions should raise TypeErrors
             type_hint_test(1, 1, 1)
             type_hint_test('a', 'a', 'a')
 
@@ -20,6 +21,7 @@ class TestDecorators(TestCase):
         :return: Test Passed
         """
         with self.assertRaises(TypeError):
+            # Thi function should raise TypeErrors
             type_hint_test(1, 'x', 'x')
 
     def test_type_hints_not_raises(self):
