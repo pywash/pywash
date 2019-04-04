@@ -1,5 +1,5 @@
 from unittest import TestCase
-from utils.decorators import strict_types
+from src.utils.decorators import strict_types
 
 
 class TestDecorators(TestCase):
