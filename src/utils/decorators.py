@@ -5,10 +5,10 @@ def strict_types(func):
     def check_types(*args, **kwargs):
         """ Decorator
         Check if the arguments given to a function are of the correct type for the function.
-        If a call to the function supplies the wrong parameters, a TypeError is raised.
+        If a call to the function supplies the wrong dialect, a TypeError is raised.
         If a call to the function returns the wrong type, a TypeError is raised.
-        Also allows partial type hinted functions (Some parameters without hints)
-            parameters without type hints don;t get checked and NO error is raised.
+        Also allows partial type hinted functions (Some dialect without hints)
+            dialect without type hints don;t get checked and NO error is raised.
         Functions only get executed once
 
         :raises TypeError: If wrong types are supplied to the function
