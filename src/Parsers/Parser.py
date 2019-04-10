@@ -1,5 +1,6 @@
 from pandas.core.frame import DataFrame
-#TODO incorporate frictionless data
+# TODO incorporate frictionless data
+
 
 class Parser:
     """
@@ -18,14 +19,17 @@ class Parser:
             print("Initializing parser: " + self.__class__.__name__)
         self.verbose = verbose
         self.path = file_path
-        self.detect_parameters()
+        self.__parameters__ = None  # Initialize dialect as None
+        self.detect_parameters()  # Detect the dialect based on local implementation
 
     def parse(self) -> DataFrame:
         """ Parses file based on file-format and file dialect """
         pass
 
     def detect_parameters(self) -> None:
-        """ Detects the dialect a file uses to store data, required for parsing correctly """
+        """
+        Detects the dialect (formatting) a file uses to store data, required for parsing correctly
+        """
         self.__parameters__ = None
 
     @property

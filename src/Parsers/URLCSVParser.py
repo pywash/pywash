@@ -1,12 +1,9 @@
-from src.Parsers.Parser import Parser
 import pandas as pd
 import requests
-import csv
+from csv import QUOTE_NONE, QUOTE_MINIMAL
+from src.Parsers.Parser import Parser
 # Import the automatic csv dialect detection package
-import os
-import sys
-sys.path.append(os.path.abspath("C://Users//s163716//Documents//Python Documents//CleverCSV//python"))
-import ccsv
+from src.Parsers import ccsv
 
 
 class URLCSV(Parser):
@@ -24,11 +21,13 @@ class URLCSV(Parser):
         content = self.decode_page()
         try:
             dialect = ccsv.Sniffer().sniff(content, verbose=self.verbose)
-            if self.verbose: print("Found dialect: " + str(dialect))
+            if self.verbose:
+                print("Found dialect: " + str(dialect))
             if len(dialect.escapechar) != 1:
                 dialect.escapechar = None
             self.__parameters__ = dialect
-            if self.verbose: print("Found dialect: " + str(dialect))
+            if self.verbose:
+                print("Found dialect: " + str(dialect))
 
         except ccsv.Error:
             print("No result from CleverCSV")
@@ -41,14 +40,15 @@ class URLCSV(Parser):
 
     def read_data(self):
         if len(self.__parameters__.quotechar) == 0:
-            quoting = csv.QUOTE_NONE
+            quoting = QUOTE_NONE
         else:
-            quoting = csv.QUOTE_MINIMAL
+            quoting = QUOTE_MINIMAL
         return pd.read_csv(self.path,
                            sep=self.__parameters__.delimiter,
                            quoting=quoting,
                            quotechar=self.__parameters__.quotechar,
                            escapechar=self.__parameters__.escapechar)
+
 
 if __name__ == "__main__":
     test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
