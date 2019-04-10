@@ -1,12 +1,8 @@
 from src.Parsers.Parser import Parser
 import pandas as pd
 from csv import QUOTE_NONE, QUOTE_MINIMAL
-
 # Import the automatic csv dialect detection package
-import os
-import sys
-sys.path.append(os.path.abspath("C://Users//s163716//Documents//Python Documents//CleverCSV//python"))
-import ccsv
+from src.Parsers import ccsv
 
 
 class CSV(Parser):

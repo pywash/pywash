@@ -1,3 +1,3 @@
-from src.Parsers.BasicCSVParser import BasicCSVParser
-from src.Parsers.CSVParser import CSV
-from src.Parsers.URLCSVParser import URLCSV
+from .BasicCSVParser import BasicCSVParser
+from .CSVParser import CSV
+from .URLCSVParser import URLCSV

@@ -2,7 +2,6 @@ from pandas import read_csv
 from pandas.core.frame import DataFrame
 from src.Parsers.Parser import Parser
 
-
 class BasicCSVParser(Parser):
     """ A csv parser without any automation """
 
