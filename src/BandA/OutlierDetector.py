@@ -48,7 +48,7 @@ def handle_outlier(features, Xy):
                   'Histogram-base Outlier Detection (HBOS)', 'K Nearest Neighbors (KNN)', 'Local Outlier Factor (LOF)',
                   'Feature Bagging', 'One-class SVM (OCSVM)']
 
-    display(HTML('<h2>BandA</h2>'))
+    display(HTML('<h2>Outliers</h2>'))
 
     if np.isnan(Xy).any():
         print("Missing values detected! Please clean missing values first!")
@@ -81,11 +81,11 @@ def handle_outlier(features, Xy):
         algorithms = [algorithms[i] for i in numbers]
 
     df = pd.DataFrame(Xy)
-    display(HTML('<h4>Visualize BandA ... </h4>'))
+    display(HTML('<h4>Visualize Outliers ... </h4>'))
     df_sorted, df_styled, df_outliers, df_pred, outliers_count = identify_outliers(df, features, algorithms)
     dc.visualize_outliers_scatter(df, df_pred)
     print("")
-    display(HTML('<h4>Drop BandA ... </h4>'))
+    display(HTML('<h4>Drop Outliers ... </h4>'))
     time.sleep(0.05)
     print("Do you want to drop outliers?")
     print("")
@@ -96,7 +96,7 @@ def handle_outlier(features, Xy):
     print("")
     ans = input()
     if ans == 'a':
-        print("BandA are dropped.")
+        print("Outliers are dropped.")
         df_no_outliers = dc.drop_outliers(df, df_outliers)
         Xy_no_outliers = df_no_outliers.values
         return Xy_no_outliers
@@ -113,7 +113,7 @@ def handle_outlier(features, Xy):
         Xy_no_outliers = df_no_outliers.values
         return Xy_no_outliers
     else:
-        print("BandA are kept.")
+        print("Outliers are kept.")
         return Xy
 
 

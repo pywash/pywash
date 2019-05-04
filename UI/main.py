@@ -10,7 +10,7 @@ import pandas as pd
 import base64
 import io
 import datetime
-
+from src.BandA.Normalization import normalize
 from UI import utils
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -47,6 +47,7 @@ app.layout = html.Div(
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
     global df
+    global df_updated
 
     decoded = base64.b64decode(content_string)
     try:
@@ -62,6 +63,7 @@ def parse_contents(contents, filename, date):
         return html.Div([
             'There was an error processing this file.'
         ])
+
     return html.Div([
         html.H5(filename),
         html.H6(datetime.datetime.fromtimestamp(date)),
@@ -90,12 +92,24 @@ def parse_contents(contents, filename, date):
                 {'label': 'One-class SVM (OCSVM)', 'value': 9},
             ],
             multi=True,
-            value="MTL",
             placeholder="Select at least 2",
             id='outlier_custom_setting',
             style={'width': "50%"}
         ),
-        html.Button('Submit', id='submit_custom_setting'),
+        html.Button('Detect outliers!', id='submit_outlier'),
+        dcc.Dropdown(
+            multi=True,
+            placeholder="Select columns to normalize",
+            id='normalize_selection',
+            style={'width': "50%"}
+        ),
+        dcc.Input(
+            id='normalize_range',
+            placeholder='Enter a value...',
+            type='text',
+            value=''
+        ),
+        html.Button('Normalize!', id='submit_normalize'),
         dash_table.DataTable(
             id='datatable',
             columns=[
@@ -139,25 +153,36 @@ def update_table(list_of_contents, list_of_names, list_of_dates):
 
 
 @app.callback(
-    dash.dependencies.Output('memory-output', 'data'),
-    [dash.dependencies.Input('outlier_setting', 'value'),
-     dash.dependencies.Input('outlier_custom_setting', 'value'),
-     dash.dependencies.Input('submit_custom_setting', 'n_clicks')])
-def outlier_detection(preset, custom, submit):
+    Output('memory-output', 'data'),
+    [Input('submit_outlier', 'n_clicks'),
+     Input('submit_normalize', 'n_clicks')],
+    state=[State('outlier_setting', 'value'),
+           State('outlier_custom_setting', 'value'),
+           State('normalize_selection', 'value'),
+           State('normalize_range', 'value'),
+           ])
+def process_input(outlier_submit, normalize_submit, outlier_preset, outlier_custom, normalize_selection,
+                  normalize_range):
     # TODO use current derived_virtual_data
-    global df_updated
-    if preset is not None:
-        df_updated = utils.handle_outlier_dash(df.columns, df.values, preset)
-        return df_updated.to_dict("records")
-    if submit is not None:
-        print(custom)
-        df_updated = utils.handle_outlier_dash(df.columns, df.values, custom)
+    # df = pd.DataFrame(data)
+    ctx = dash.callback_context
+    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    if button_clicked == 'submit_outlier':
+        if outlier_preset is not None:
+            df_updated = utils.handle_outlier_dash(df.columns, df.values, outlier_preset)
+            return df_updated.to_dict("records")
+        if outlier_custom is not None:
+            df_updated = utils.handle_outlier_dash(df.columns, df.values, outlier_custom)
+            return df_updated.to_dict("records")
+    if button_clicked == 'submit_normalize' is not None and normalize_range is not None and normalize_submit is not None:
+        df_updated = normalize(df, normalize_selection, normalize_range)
         return df_updated.to_dict("records")
 
 
 @app.callback(Output('datatable', 'data'),
               [Input('memory-output', 'data')])
-def on_data_set_table(data):
+def update_datatable(data):
     if data is None:
         raise PreventUpdate
 
@@ -166,17 +191,18 @@ def on_data_set_table(data):
 
 @app.callback(Output('datatable', 'columns'),
               [Input('datatable', 'data')])
-def on_data_set_table(columns):
-    if columns is None:
+def update_columns(data):
+    if data is None:
         raise PreventUpdate
+    df = pd.DataFrame(data)
     return [
-        {"name": i, "id": i, "deletable": True} for i in df_updated.columns
+        {"name": i, "id": i, "deletable": True} for i in df.columns
     ]
 
 
 @app.callback(Output('datatable', 'style_data_conditional'),
               [Input('datatable', 'data')])
-def on_data_set_table(columns):
+def update_datatable_styling(columns):
     if columns is None:
         raise PreventUpdate
     return [
@@ -200,14 +226,25 @@ def on_data_set_table(columns):
 
 
 @app.callback(
-    dash.dependencies.Output('download-link', 'href'),
+    Output('download-link', 'href'),
     [Input('datatable', 'derived_virtual_data'),
-     dash.dependencies.Input('download-button', 'n_clicks')])
+     Input('download-button', 'n_clicks')])
 def update_download_link(data, n_clicks):
     if n_clicks is not None:
         df_download = pd.DataFrame(data)
         return "data:text/csv;charset=utf-8," + \
                urllib.parse.quote(df_download.to_csv(index=False, encoding='utf-8'))
+
+
+@app.callback(Output('normalize_selection', 'options'),
+              [Input('datatable', 'data')])
+def on_data_set_table(data):
+    if data is None:
+        raise PreventUpdate
+    df = pd.DataFrame(data)
+    return [
+        {"label": i, "value": value} for i, value in zip(df.columns, range(0, len(df.columns) - 1))
+    ]
 
 
 if __name__ == '__main__':
