@@ -12,6 +12,7 @@ import io
 import datetime
 from src.BandA.Normalization import normalize
 from UI import utils
+import numpy as np
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -70,12 +71,12 @@ def parse_contents(contents, filename, date):
         dcc.Store(id='memory-output'),
         dcc.Dropdown(
             options=[
-                {'label': 'Regular', 'value': 'a'},
-                {'label': 'Fast', 'value': 'b'},
+                {'label': 'Fast', 'value': 'a'},
+                {'label': 'Regular', 'value': 'b'},
                 {'label': 'Full', 'value': 'c'},
             ],
-            placeholder="Select a setting",
-            id='outlier_setting',
+            placeholder="Select a preset",
+            id='outlier_preset',
             style={'width': "30%"}
         ),
         dcc.Dropdown(
@@ -105,7 +106,7 @@ def parse_contents(contents, filename, date):
         ),
         dcc.Input(
             id='normalize_range',
-            placeholder='Enter a value...',
+            placeholder='Range (i.e. "0,1")',
             type='text',
             value=''
         ),
@@ -132,7 +133,7 @@ def parse_contents(contents, filename, date):
             navigation="page",
         ),
         html.A(html.Button('Download current data', id='download-button'), id='download-link',
-               download="rawdata.csv",
+               download="cleandata.csv",
                href="",
                target="_blank"),
         html.Div(id='datatable-interactivity-container')
@@ -156,27 +157,24 @@ def update_table(list_of_contents, list_of_names, list_of_dates):
     Output('memory-output', 'data'),
     [Input('submit_outlier', 'n_clicks'),
      Input('submit_normalize', 'n_clicks')],
-    state=[State('outlier_setting', 'value'),
-           State('outlier_custom_setting', 'value'),
+    state=[State('outlier_custom_setting', 'value'),
            State('normalize_selection', 'value'),
            State('normalize_range', 'value'),
+           State('datatable', 'derived_virtual_data'),
            ])
-def process_input(outlier_submit, normalize_submit, outlier_preset, outlier_custom, normalize_selection,
-                  normalize_range):
+def process_input(outlier_submit, normalize_submit, outlier_setting, normalize_selection,
+                  normalize_range, data):
     # TODO use current derived_virtual_data
-    # df = pd.DataFrame(data)
+    df = pd.DataFrame(data)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if button_clicked == 'submit_outlier':
-        if outlier_preset is not None:
-            df_updated = utils.handle_outlier_dash(df.columns, df.values, outlier_preset)
-            return df_updated.to_dict("records")
-        if outlier_custom is not None:
-            df_updated = utils.handle_outlier_dash(df.columns, df.values, outlier_custom)
+        if outlier_setting is not None:
+            df_updated = utils.handle_outlier_dash(df, outlier_setting)
             return df_updated.to_dict("records")
     if button_clicked == 'submit_normalize' is not None and normalize_range is not None and normalize_submit is not None:
-        df_updated = normalize(df, normalize_selection, normalize_range)
+        df_updated = normalize(df, normalize_selection, tuple(int(i) for i in normalize_range.split(',')))
         return df_updated.to_dict("records")
 
 
@@ -242,9 +240,21 @@ def on_data_set_table(data):
     if data is None:
         raise PreventUpdate
     df = pd.DataFrame(data)
+    eligible_features = df.select_dtypes(include=[np.number]).columns.tolist()
     return [
-        {"label": i, "value": value} for i, value in zip(df.columns, range(0, len(df.columns) - 1))
+        {"label": i, "value": i} for i in eligible_features
     ]
+
+
+@app.callback(Output('outlier_custom_setting', 'value'),
+              [Input('outlier_preset', 'value')])
+def on_data_set_table(value):
+    if value == 'a':
+        return [0, 1, 2, 3]
+    if value == 'b':
+        return [0, 1, 2, 3, 4, 5, 6, 7]
+    if value == 'c':
+        return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
 if __name__ == '__main__':

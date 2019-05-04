@@ -4,41 +4,35 @@ import numpy as np
 import pandas as pd
 
 
-def normalize(df, selection, range = (0,1)):
+def normalize(df, selection, range=(0, 1)):
     """Normalizes the data.
 
     The user decides which futures are normalized and in what range.
 
     Parameters
     ----------
-    features : list
-        List of feature names.
 
-    Xy : array-like
-        Numpy array containing the data.
+    df : DataFrame
+        DataFrame containing the data.
+
+    selection : list
+        List of columns to be normalized.
+
+    feature_range : default=(0, 1)
+        Desired range of transformed data.
 
     Returns
     -------
 
-    Xy_normalized : array-like
-        Normalized data.
-
-    Xy : array-like
-        Original data where no normalization has taken place.
+    df : array-like
+        Original data where desired columns have been normalized.
     """
 
-    if np.isnan(df.values).any():
+    if pd.isnull(df).values.any():
+        # TODO implement handle_missing for dash
         print("Missing values detected! Please clean missing values first!")
         features, Xy = handle_missing(df.columns, df.values)
 
-    #df = pd.DataFrame(Xy, columns=features)
+    df[selection] = pd.DataFrame(preprocessing.minmax_scale(df[selection], feature_range=range))
 
-    #print("What features should be normalized? input = list")
-    #eligible_features = df.select_dtypes(include=[np.number]).columns.tolist()
-    #print(eligible_features)
-    #column_names = input()
-    #column_names = list(column_names)
-    
-    scaler = preprocessing.minmax_scale(Xy, feature_range=range)
-
-    return scaler.fit_transform(Xy)
+    return df
