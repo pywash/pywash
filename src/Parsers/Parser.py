@@ -33,5 +33,5 @@ class Parser:
         self.__parameters__ = None
 
     @property
-    def dialect(self):
+    def get_dialect(self):
         return self.__parameters__

@@ -30,7 +30,7 @@ if __name__ == "__main__":
     p = assign_parser("C:/AAA_School/Assignments/BEP/Datasets/Test.csv", True)
     print()
     print(p)
-    print(p.dialect)
+    print(p.get_dialect())
     print()
     print(p.parse().head(5))
     print('Done')
