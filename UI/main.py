@@ -11,6 +11,7 @@ import base64
 import io
 import datetime
 from src.BandA.Normalization import normalize
+from src.SharedDataFrame import SharedDataFrame
 from UI import utils
 import numpy as np
 
@@ -40,9 +41,127 @@ app.layout = html.Div(
             # Allow multiple files to be uploaded
             multiple=True
         ),
+        html.Div(id='tabs_container', children=[dcc.Tabs(id='tabs')]),
         html.Div(id='output-data-upload'),
     ])
 
+def DATA_DIV(filename, df):
+    return html.Div([
+        html.H5(filename),
+        dcc.Store(id='memory-output'),
+        dcc.Dropdown(
+            options=[
+                {'label': 'Fast', 'value': 'a'},
+                {'label': 'Regular', 'value': 'b'},
+                {'label': 'Full', 'value': 'c'},
+            ],
+            placeholder="Select a preset",
+            id='outlier_preset',
+            style={'width': "30%"}
+        ),
+        dcc.Dropdown(
+            options=[
+                {'label': 'Isolation Forest', 'value': 0},
+                {'label': 'Cluster-based Local Outlier Factor', 'value': 1},
+                {'label': 'Minimum Covariance Determinant (MCD)', 'value': 2},
+                {'label': 'Principal Component Analysis (PCA)', 'value': 3},
+                {'label': 'Angle-based Outlier Detector (ABOD)', 'value': 4},
+                {'label': 'Histogram-base Outlier Detection (HBOS)', 'value': 5},
+                {'label': 'K Nearest Neighbors (KNN)', 'value': 6},
+                {'label': 'Local Outlier Factor (LOF)', 'value': 7},
+                {'label': 'Feature Bagging', 'value': 8},
+                {'label': 'One-class SVM (OCSVM)', 'value': 9},
+            ],
+            multi=True,
+            placeholder="Select at least 2",
+            id='outlier_custom_setting',
+            style={'width': "50%"}
+        ),
+        html.Button('Detect outliers!', id='submit_outlier'),
+        dcc.Dropdown(
+            multi=True,
+            placeholder="Select columns to normalize",
+            id='normalize_selection',
+            style={'width': "50%"}
+        ),
+        dcc.Input(
+            id='normalize_range',
+            placeholder='Range (i.e. "0,1")',
+            type='text',
+            value=''
+        ),
+        html.Button('Normalize!', id='submit_normalize'),
+        dash_table.DataTable(
+            id='datatable',
+            columns=[
+                {"name": i, "id": i, "deletable": True} for i in df.columns
+            ],
+            data=df.to_dict('records'),
+            editable=True,
+            filtering=True,
+            sorting=True,
+            sorting_type="multi",
+            row_selectable="multi",
+            row_deletable=True,
+            selected_rows=[],
+            pagination_mode="fe",
+            pagination_settings={
+                "displayed_pages": 1,
+                "current_page": 0,
+                "page_size": 50,
+            },
+            navigation="page",
+        ),
+        html.A(html.Button('Download current data', id='download-button'), id='download-link',
+               download="cleandata.csv",
+               href="",
+               target="_blank"),
+        html.Div(id='datatable-interactivity-container')
+    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
+    )
+
+class Tabs:
+    """ Class to keep track of created tabs and to add new ones """
+    # TODO, move this class somewhere else
+    def __init__(self):
+        self.tabs = []
+
+    def get_tabs(self):
+        return dcc.Tabs(id='tabs', children=self.tabs)
+
+    def create_tabs(self, filenames):
+        if filenames is None:
+            return [dcc.Tab(id='main',label='Main', value='main')]
+        else:
+            created_tabs=[dcc.Tab(label=name, value=name)
+                  for name in filenames]
+            created_tabs.insert(0, dcc.Tab(label='Main', value='main2'))
+            return created_tabs
+
+    def add_tabs(self, filenames):
+        new_tabs = self.create_tabs(filenames)
+        self.tabs = self.tabs.extend(new_tabs)
+
+class DataSet:
+    """ Class to keep track of all uploaded datasets """
+    # TODO, move this class
+    def __init__(self):
+        self.datasets = {}
+
+    def add_dataset(self, filename, sdf: SharedDataFrame):
+        self.datasets.update({filename: sdf})
+
+    def get_datasets(self):
+        return self.datasets
+
+    def get_dataset(self, filename):
+        return self.datasets.get(filename)
+
+def parser(filenames):
+    if filenames is not None:
+        for file in filenames:
+            dataFrame = SharedDataFrame(file)
+            # TODO Check if dataframes can be merged together
 
 # TODO use own parser @yuri
 def parse_contents(contents, filename, date):
@@ -141,6 +260,48 @@ def parse_contents(contents, filename, date):
     )
 
 
+UI_tabs = Tabs()
+UI_data = DataSet()
+@app.callback(Output('tabs_container', 'children'),
+              [Input('upload-data', 'contents')],
+              [State('upload-data', 'filename'),
+               State('upload-data', 'last_modified'),
+               State('tabs', 'children')])
+def upload_data(contents: list, filenames: list, dates: list, current_tabs: list):
+    if filenames is not None:
+        print(filenames)
+        created_tabs = [dcc.Tab(label=name, value=name)
+                        for name in filenames]
+        current_tabs.extend(created_tabs)
+        #UI_tabs.add_tabs(filenames)
+        decoded = base64.b64decode(contents.pop())
+        for file in filenames:
+            UI_data.add_dataset(file, SharedDataFrame(df=pd.read_csv(
+                io.StringIO(decoded.decode('iso-8859-1')))))
+        return dcc.Tabs(id='tabs', children=current_tabs)
+    if filenames is None:
+        print(str(filenames) + 'is None, right?')
+        print(current_tabs)
+        if current_tabs is None:
+            created_tabs = [dcc.Tab(id='main', label='Main', value='main')]
+        else:
+            created_tabs = current_tabs
+        return dcc.Tabs(id='tabs', children=created_tabs)
+
+@app.callback(Output('output-data-upload', 'children'),
+              [Input('tabs', 'value')])
+def render_data(tab):
+    if UI_data.get_dataset(tab) is None:
+        print('It is None')
+        print('tab')
+        return [html.H5(tab)]
+    else:
+                print(tab)
+                print(type(tab))
+                print(UI_data.get_dataset(tab))
+                return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
+
+"""
 @app.callback(Output('output-data-upload', 'children'),
               [Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
@@ -151,7 +312,7 @@ def update_table(list_of_contents, list_of_names, list_of_dates):
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
-
+"""
 
 @app.callback(
     Output('memory-output', 'data'),
@@ -168,7 +329,6 @@ def process_input(outlier_submit, normalize_submit, outlier_setting, normalize_s
     df = pd.DataFrame(data)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
-
     if button_clicked == 'submit_outlier':
         if outlier_setting is not None:
             df_updated = utils.handle_outlier_dash(df, outlier_setting)
