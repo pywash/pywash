@@ -1,5 +1,6 @@
 from src.Parsers.Parser import Parser
 import pandas as pd
+from io import StringIO
 from csv import QUOTE_NONE, QUOTE_MINIMAL
 # Import the automatic csv dialect detection package
 from src.Parsers import ccsv
@@ -9,22 +10,31 @@ class CSV(Parser):
     """
     A CSV Parser that can automatically detect the correct csv format of local csv-files.
     """
-    def parse(self):
-        # Detect and parse the CSV-file
-        if self.verbose:
-            print("Returning parsed dataset")
-        return self.read_data()
+    def parse_file(self):
+        return self.read_data(self.path)
 
-    def detect_parameters(self):
+    def parse_content(self):
+        return self.read_data(StringIO(self.decoded_contents))
+
+    def string_data(self):
+        with open(self.path, 'r') as csv_file:
+            self.encoding = csv_file.encoding
+            reader = csv_file.readlines()
+        return ''.join(reader)
+
+    def detect_dialect(self):
         if self.verbose:
             print("Detecting dialect ...")
 
         # Create string of dataset
-        with open(self.path, 'r') as csv_file:
-            reader = csv_file.readlines()
-        csv = ''.join(reader)
-        # Detect dialect based on string
+        if self.decoded_contents is None:
+            # Load and create a string of the dataset
+            csv = self.string_data()
+        else:
+            csv = self.decoded_contents
+        # Detect dialect based on the decoded dataset string
         dialect = ccsv.Sniffer().sniff(csv, verbose=self.verbose)
+        # self.test = dialect.to_csv_dialect() TODO try and use the to_csv_dialect function
 
         if len(dialect.escapechar) != 1:
             dialect.escapechar = None
@@ -32,12 +42,18 @@ class CSV(Parser):
             print("Found dialect: " + str(dialect))
         self.__parameters__ = dialect
 
-    def read_data(self):
+    def read_data(self, to_parse):
+        """
+        Uses the detected dialect and a given object to create a DataFrame
+
+        :param to_parse: The object to parse, can be a filepath or BytesIO object
+        :return: A DataFrame with the data from the dataset
+        """
         if len(self.__parameters__.quotechar) == 0:
             quoting = QUOTE_NONE
         else:
             quoting = QUOTE_MINIMAL
-        return pd.read_csv(self.path,
+        return pd.read_csv(to_parse,
                            sep=self.__parameters__.delimiter,
                            quoting=quoting,
                            quotechar=self.__parameters__.quotechar,
@@ -45,10 +61,10 @@ class CSV(Parser):
 
 
 if __name__ == "__main__":
-    data = CSV("C://AAA_School/Assignments/BEP/Datasets/Test.csv").parse()
+    data = CSV(file_path="C://AAA_School/Assignments/BEP/Datasets/Test.csv", verbose=True).parse()
     CSV("C:/AAA_School/Assignments/BEP/Datasets/Test2.csv").parse()
     x = CSV("C:/AAA_School/Assignments/BEP/Datasets/Test3.csv")
-    y = x.parse()
+    y = x.parse_file()
     print()
     print(y.head(5))
     print(y.shape)

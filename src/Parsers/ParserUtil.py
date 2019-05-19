@@ -1,14 +1,15 @@
 from src.Parsers import *
 from src.Exceptions import FileFormatNotFound
 
-__parsers__ = {'.csv': BasicCSVParser}
+__parsers__ = {'.csv': CSV}
 __url_parsers__ = {'.csv': URLCSV}
 
 
-def assign_parser(file_path: str, verbose: bool = False) -> callable:
+def assign_parser(file_path: str, contents: str = None, verbose: bool = False) -> callable:
     """ Allocate a specific parser to a file_path
 
     :param file_path: The file path of the dataset to parse
+    :param contents: The dataset as a string
     :param verbose: True for output
     :return: A parser object which is able to parse the dataset
     """
@@ -19,8 +20,16 @@ def assign_parser(file_path: str, verbose: bool = False) -> callable:
 
     # Find the correct parser for the file
     for parser in parsers:
+        # Check if we have implemented a parser for this file
         if file_path.endswith(parser):
-            return __parsers__[parser](file_path, verbose)
+            # Check if the dataset has been given as a string
+            if contents is None:
+                return __parsers__[parser](file_path=file_path,
+                                           verbose=verbose)
+            else:
+                return __parsers__[parser](file_path=file_path,
+                                           contents=contents,
+                                           verbose=verbose)
 
     # When the file format is not in our list of parable formats
     raise FileFormatNotFound("File format of file: " + file_path + " is unknown")
@@ -32,5 +41,5 @@ if __name__ == "__main__":
     print(p)
     print(p.get_dialect())
     print()
-    print(p.parse().head(5))
+    print(p.parse_file().head(5))
     print('Done')

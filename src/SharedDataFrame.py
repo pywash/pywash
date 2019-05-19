@@ -7,9 +7,11 @@ class SharedDataFrame:
     """ Shared DataFrame
     Main Abstract Data Type to store, process and use the data
     """
-    def __init__(self, file_path: str = None, df: DataFrame = None, verbose: bool = False):
+    def __init__(self, file_path: str = None, contents: str = None, df: DataFrame = None,
+                 verbose: bool = False):
         """ Initializes the SharedDataFrame
         Can be given a path to a file to parse
+         or a dataset as string needed to be parsed
          or a parsed DataFrame can be given to be used
         """
         self.verbose = verbose
@@ -18,7 +20,7 @@ class SharedDataFrame:
         self.parser = None
         # When a path to a file is given, parse and load the data
         if file_path is not None:
-            self.parser = assign_parser(file_path, verbose)
+            self.parser = assign_parser(file_path=file_path, contents=contents, verbose=verbose)
             self._load_data()
         # When a DataFrame is given, set the DataFrame as the SharedDataFrame data
         elif df is not None:

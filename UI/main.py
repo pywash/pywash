@@ -120,27 +120,6 @@ def DATA_DIV(filename, df):
     ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
     )
 
-class Tabs:
-    """ Class to keep track of created tabs and to add new ones """
-    # TODO, move this class somewhere else
-    def __init__(self):
-        self.tabs = []
-
-    def get_tabs(self):
-        return dcc.Tabs(id='tabs', children=self.tabs)
-
-    def create_tabs(self, filenames):
-        if filenames is None:
-            return [dcc.Tab(id='main',label='Main', value='main')]
-        else:
-            created_tabs=[dcc.Tab(label=name, value=name)
-                  for name in filenames]
-            created_tabs.insert(0, dcc.Tab(label='Main', value='main2'))
-            return created_tabs
-
-    def add_tabs(self, filenames):
-        new_tabs = self.create_tabs(filenames)
-        self.tabs = self.tabs.extend(new_tabs)
 
 class DataSet:
     """ Class to keep track of all uploaded datasets """
@@ -260,7 +239,6 @@ def parse_contents(contents, filename, date):
     )
 
 
-UI_tabs = Tabs()
 UI_data = DataSet()
 @app.callback(Output('tabs_container', 'children'),
               [Input('upload-data', 'contents')],
@@ -268,38 +246,34 @@ UI_data = DataSet()
                State('upload-data', 'last_modified'),
                State('tabs', 'children')])
 def upload_data(contents: list, filenames: list, dates: list, current_tabs: list):
-    if filenames is not None:
-        print(filenames)
-        created_tabs = [dcc.Tab(label=name, value=name)
-                        for name in filenames]
-        current_tabs.extend(created_tabs)
-        #UI_tabs.add_tabs(filenames)
-        decoded = base64.b64decode(contents.pop())
-        for file in filenames:
-            UI_data.add_dataset(file, SharedDataFrame(df=pd.read_csv(
-                io.StringIO(decoded.decode('iso-8859-1')))))
-        return dcc.Tabs(id='tabs', children=current_tabs)
     if filenames is None:
-        print(str(filenames) + 'is None, right?')
-        print(current_tabs)
         if current_tabs is None:
             created_tabs = [dcc.Tab(id='main', label='Main', value='main')]
         else:
             created_tabs = current_tabs
         return dcc.Tabs(id='tabs', children=created_tabs)
+    if filenames is not None:
+        print("loading datasets: " + str(filenames))
+        # Add filenames to the tabs
+        created_tabs = [dcc.Tab(label=name, value=name)
+                        for name in filenames]
+        current_tabs.extend(created_tabs)
+        # Load the datasets into the Dataset object for storage
+        for i in range(len(filenames)):
+            UI_data.add_dataset(filenames[i], SharedDataFrame(file_path=filenames[i],
+                                                              contents=contents.pop(),
+                                                              verbose=True))
+        return dcc.Tabs(id='tabs', children=current_tabs)
+
 
 @app.callback(Output('output-data-upload', 'children'),
               [Input('tabs', 'value')])
 def render_data(tab):
     if UI_data.get_dataset(tab) is None:
-        print('It is None')
-        print('tab')
+        # TODO, CREATE MAIN PAGE
         return [html.H5(tab)]
     else:
-                print(tab)
-                print(type(tab))
-                print(UI_data.get_dataset(tab))
-                return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
+        return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
 
 """
 @app.callback(Output('output-data-upload', 'children'),
