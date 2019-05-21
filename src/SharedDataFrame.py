@@ -18,13 +18,15 @@ class SharedDataFrame:
         self.file_path = file_path
         self.data = None
         self.parser = None
-        # When a path to a file is given, parse and load the data
+        self.score = None
+        # When a path to a file or the contents are given, parse the file and load the data
         if file_path is not None:
             self.parser = assign_parser(file_path=file_path, contents=contents, verbose=verbose)
             self._load_data()
         # When a DataFrame is given, set the DataFrame as the SharedDataFrame data
         elif df is not None:
             self.set_data(df)
+        self.name = self.parser.name
 
     def __repr__(self):
         # TODO, create representation
@@ -47,6 +49,10 @@ class SharedDataFrame:
     def analyze_data(self):
         """ Determine band value of dataset """
         pass
+
+    def get_datascore(self):
+        """ Return the band value of the dataset """
+        return self.score
 
     # Merge functions #####
     def is_mergeable(self, other_sdf) -> bool:
