@@ -1,6 +1,7 @@
 from pandas.core.frame import DataFrame
 import base64
 import chardet
+import os
 # TODO incorporate frictionless data
 
 
@@ -20,17 +21,21 @@ class Parser:
         """
         if verbose:
             print("Initializing parser: " + self.__class__.__name__)
+        # Set initial class values
         self.verbose = verbose
         self.path = file_path
+        self.name = os.path.splitext(file_path)[0]
         self.contents = contents
         self.encoding = None  # File encoding is currently unknown
+        self.attributes = None  # File attributes and types are currently unknown
+        self.description = None
         if contents is None:
             # Set the parser to use local file parsing
             self.parse_function = self.parse_file
         else:
             # Set the parser to use string-content based parsing
             self.parse_function = self.parse_content
-            # Decode the contents into the dataset string TODO Automatic decoding
+            # Decode the contents into the dataset string TODO Automatic (effective) decoding
             content_type, content_string = self.contents.split(',')
             decoded = base64.b64decode(content_string)
             self.encoding = chardet.detect(decoded)['encoding']  # Doesn't do anything yet

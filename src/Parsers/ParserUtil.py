@@ -1,7 +1,7 @@
 from src.Parsers import *
 from src.Exceptions import FileFormatNotFound
 
-__parsers__ = {'.csv': CSV}
+__parsers__ = {'.csv': CSV, '.arff': Arff}
 __url_parsers__ = {'.csv': URLCSV}
 
 
