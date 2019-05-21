@@ -45,6 +45,31 @@ app.layout = html.Div(
         html.Div(id='output-data-upload'),
     ])
 
+
+def main_page():
+    scaling_factor_images = 0.3
+    return html.Div([
+        html.H2("Welcome to the Pywash browser interface"),
+        html.H4("This is a work in progress bachelor final project"),
+        html.H4("You can start working by selecting or drag and drop a file below"),
+        dcc.Upload(
+            id='upload-data',
+            multiple=True,
+            children=[html.Button('Upload File')]),
+        html.Img(src=app.get_asset_url('TUe.png'),
+                 style= {'width': 1173*scaling_factor_images,
+                         'height': 320*scaling_factor_images}),
+        html.Img(src=app.get_asset_url('JADS.jpg'),
+                 style= {'width': 850*scaling_factor_images,
+                         'height': 280*scaling_factor_images}),
+        html.Img(src=app.get_asset_url('TiU.png'),
+                 style= {'width': 1312*scaling_factor_images,
+                         'height': 333*scaling_factor_images}),
+        html.H6('Powered by: Technical University Eindhoven, '
+                'Jheronimus Academy of Data Science and Tilburg University')
+    ])
+
+
 def DATA_DIV(filename, df):
     return html.Div([
         html.H5(filename),
@@ -136,11 +161,6 @@ class DataSet:
     def get_dataset(self, filename):
         return self.datasets.get(filename)
 
-def parser(filenames):
-    if filenames is not None:
-        for file in filenames:
-            dataFrame = SharedDataFrame(file)
-            # TODO Check if dataframes can be merged together
 
 # TODO use own parser @yuri
 def parse_contents(contents, filename, date):
@@ -254,16 +274,21 @@ def upload_data(contents: list, filenames: list, dates: list, current_tabs: list
         return dcc.Tabs(id='tabs', children=created_tabs)
     if filenames is not None:
         print("loading datasets: " + str(filenames))
+        # Load the datasets into the Dataset object for storage
+        for i in range(len(filenames)):
+            print(contents)
+            new_dataset = SharedDataFrame(file_path=filenames[i],
+                                          contents=contents.pop(),
+                                          verbose=True)
+            UI_data.add_dataset(new_dataset.name, new_dataset)
+            filenames[i] = new_dataset.name
         # Add filenames to the tabs
         created_tabs = [dcc.Tab(label=name, value=name)
                         for name in filenames]
+        # TODO Use dataset name instead of filepath as header
+        # TODO Test for duplicates and separate them
         current_tabs.extend(created_tabs)
-        # Load the datasets into the Dataset object for storage
-        for i in range(len(filenames)):
-            UI_data.add_dataset(filenames[i], SharedDataFrame(file_path=filenames[i],
-                                                              contents=contents.pop(),
-                                                              verbose=True))
-        return dcc.Tabs(id='tabs', children=current_tabs)
+        return dcc.Tabs(id='tabs', value='main', children=current_tabs)
 
 
 @app.callback(Output('output-data-upload', 'children'),
@@ -271,7 +296,7 @@ def upload_data(contents: list, filenames: list, dates: list, current_tabs: list
 def render_data(tab):
     if UI_data.get_dataset(tab) is None:
         # TODO, CREATE MAIN PAGE
-        return [html.H5(tab)]
+        return main_page()
     else:
         return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
 
