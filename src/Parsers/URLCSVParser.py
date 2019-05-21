@@ -49,8 +49,10 @@ class URLCSV(Parser):
 
 
 if __name__ == "__main__":
-    test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
-    test_2 = "https://raw.githubusercontent.com/queq/just-stuff/c1b8714664cc674e1fc685bd957eac548d636a43/pov/TopFixed/build/project_r_pad.csv"
+    test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/" \
+             "37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
+    test_2 = "https://raw.githubusercontent.com/queq/just-stuff/" \
+             "c1b8714664cc674e1fc685bd957eac548d636a43/pov/TopFixed/build/project_r_pad.csv"
     # URLCSV appears not to work on test 2.
     p = URLCSV(test_1, verbose=True)
     x = p.parse()

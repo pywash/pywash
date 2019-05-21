@@ -4,6 +4,7 @@
 
 from src.SharedDataFrame import SharedDataFrame
 
+
 class AutoCleaner():
     """
     Main interface for the PyWash package
@@ -12,3 +13,6 @@ class AutoCleaner():
     """
     def __init__(self, file_path: str):
         self.data = SharedDataFrame(file_path)
+
+    def get_classification(self):
+        return self.data.analyze_data()
