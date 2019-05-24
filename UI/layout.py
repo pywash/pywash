@@ -1,0 +1,202 @@
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_table
+import plotly.graph_objs as go
+
+from UI.main import app
+
+
+def layout_main():
+    scaling_factor_images = 0.3
+    return html.Div([
+        html.H2("Welcome to the Pywash browser interface"),
+        html.H4("This is a work in progress bachelor final project"),
+        html.H4("You can start working by selecting or drag and drop a file below"),
+        dcc.Upload(
+            id='upload-data',
+            multiple=True,
+            children=[html.Button('Upload File')]),
+        html.Img(src=app.get_asset_url('TUe.png'),
+                 style={'width': 1173 * scaling_factor_images,
+                        'height': 320 * scaling_factor_images}),
+        html.Img(src=app.get_asset_url('JADS.jpg'),
+                 style={'width': 850 * scaling_factor_images,
+                        'height': 280 * scaling_factor_images}),
+        html.Img(src=app.get_asset_url('TiU.png'),
+                 style={'width': 1312 * scaling_factor_images,
+                        'height': 333 * scaling_factor_images}),
+        html.H6('Powered by: Technical University Eindhoven, '
+                'Jheronimus Academy of Data Science and Tilburg University')
+    ])
+
+
+def DATA_DIV(filename, df):
+    return html.Div([
+        html.Div(id='cleaning-tabs-container', children=[
+            dcc.Tabs(id="tabs-cleaning", value='BandB', children=[
+                dcc.Tab(id='BandA_tab',label='BandB', value='BandB', children=layout_bandB()),
+                dcc.Tab(id='BandB_tab',label='BandA', value='BandA', children=layout_bandA()),
+                dcc.Tab(id='plotstab', label='Plots', value='Plots', children=layout_plots()),
+            ]),
+        ]),
+        html.H5(filename),
+        dcc.Store(id='memory-output'),
+        dash_table.DataTable(
+            id='datatable',
+            columns=[
+                {"name": i, "id": i, "deletable": True} for i in df.columns
+            ],
+            data=df.to_dict('records'),
+            editable=True,
+            filtering=True,
+            sorting=True,
+            sorting_type="multi",
+            row_selectable="multi",
+            row_deletable=True,
+            selected_rows=[],
+            pagination_mode="fe",
+            pagination_settings={
+                "displayed_pages": 1,
+                "current_page": 0,
+                "page_size": 50,
+            },
+            navigation="page",
+        ),
+        html.A(html.Button('Download current data', id='download-button'), id='download-link',
+               download="cleandata.csv",
+               href="",
+               target="_blank"),
+        html.Div(id='datatable-interactivity-container')
+    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
+    )
+
+
+def layout_bandA():
+    return html.Div([
+        dcc.Dropdown(
+            options=[
+                {'label': 'Fast', 'value': 'a'},
+                {'label': 'Regular', 'value': 'b'},
+                {'label': 'Full', 'value': 'c'},
+            ],
+            placeholder="Select a preset",
+            id='outlier_preset',
+            style={'width': "30%"}
+        ),
+        dcc.Dropdown(
+            options=[
+                {'label': 'Isolation Forest', 'value': 0},
+                {'label': 'Cluster-based Local Outlier Factor', 'value': 1},
+                {'label': 'Minimum Covariance Determinant (MCD)', 'value': 2},
+                {'label': 'Principal Component Analysis (PCA)', 'value': 3},
+                {'label': 'Angle-based Outlier Detector (ABOD)', 'value': 4},
+                {'label': 'Histogram-base Outlier Detection (HBOS)', 'value': 5},
+                {'label': 'K Nearest Neighbors (KNN)', 'value': 6},
+                {'label': 'Local Outlier Factor (LOF)', 'value': 7},
+                {'label': 'Feature Bagging', 'value': 8},
+                {'label': 'One-class SVM (OCSVM)', 'value': 9},
+            ],
+            multi=True,
+            placeholder="Select at least 2",
+            id='outlier_custom_setting',
+            style={'width': "50%"}
+        ),
+        html.Button('Detect outliers!', id='submit_outlier'),
+        dcc.Dropdown(
+            multi=True,
+            placeholder="Select columns to normalize",
+            id='normalize_selection',
+            style={'width': "50%"}
+        ),
+        dcc.Input(
+            id='normalize_range',
+            placeholder='Range (i.e. "0,1")',
+            type='text',
+            value=''
+        ),
+        html.Button('Normalize!', id='submit_normalize'),
+    ])
+
+
+def layout_bandB():
+    return html.Div([
+        dcc.Dropdown(
+            id='dropdown-missing',
+            options=[
+                {'label': 'n/a', 'value': 'n/a'},
+                {'label': 'na', 'value': 'na'},
+                {'label': '--', 'value': '--'},
+                {'label': '?', 'value': '?'},
+            ],
+            multi=True,
+            value=['n/a', 'na', '--', '?'],
+            style={'width': "50%"}
+
+        ),
+        dcc.Input(id='input-missing', value='', placeholder="Add extra character"),
+        html.Button('Add Option', id='add-missing'),
+        dcc.RadioItems(
+            options=[
+                {'label': 'mcar', 'value': 'mcar'},
+                {'label': 'mar', 'value': 'mar'},
+                {'label': 'mnar', 'value': 'mnar'}
+            ],
+            id='missing_setting',
+            value='mar',
+            labelStyle={'display': 'inline-block'}
+        ),
+        html.Button('Fix missing values!', id='submit_missing'),
+        html.Button('Fix data types!', id='data-types'),
+    ])
+
+
+def layout_plots():
+    return html.Div([dcc.Checklist(
+        options=[
+            {'label': 'scale', 'value': 'scaled'},
+        ],
+        values=['scaled'],
+        id='boxplot-setting'
+    ),
+        html.Button('Boxplot', id='boxplot'),
+        html.Button('Categorical distribution', id='distribution')
+    ])
+
+
+def layout_boxplot(data):
+    return html.Div([
+        dcc.Checklist(
+            options=[
+                {'label': 'scale', 'value': 'scaled'},
+            ],
+            values=['scaled'],
+            id='boxplot-setting'
+        ),
+        html.Button('Boxplot', id='boxplot'),
+        html.Button('Categorical distribution', id='distribution'),
+        dcc.Graph(
+            figure={
+                'data': data
+            })
+    ])
+
+
+def layout_distriplot(data):
+    return html.Div([
+        dcc.Checklist(
+            options=[
+                {'label': 'scale', 'value': 'scaled'},
+            ],
+            values=['scaled'],
+            id='boxplot-setting'
+        ),
+        html.Button('Boxplot', id='boxplot'),
+        html.Button('Categorical distribution', id='distribution'),
+        dcc.Graph(
+            figure={
+                'data': data,
+                'layout': go.Layout(
+                    barmode='stack',
+                )
+            })
+    ])

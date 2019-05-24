@@ -10,7 +10,13 @@ import pandas as pd
 import base64
 import io
 import datetime
+
+from sklearn.preprocessing import StandardScaler
+
+from UI.layout import *
 from src.BandA.Normalization import normalize
+from src.BandB.DataTypes import discover_types
+from src.BandB.MissingValues import handle_missing
 from src.SharedDataFrame import SharedDataFrame
 from UI import utils
 import numpy as np
@@ -46,108 +52,9 @@ app.layout = html.Div(
     ])
 
 
-def main_page():
-    scaling_factor_images = 0.3
-    return html.Div([
-        html.H2("Welcome to the Pywash browser interface"),
-        html.H4("This is a work in progress bachelor final project"),
-        html.H4("You can start working by selecting or drag and drop a file below"),
-        dcc.Upload(
-            id='upload-data',
-            multiple=True,
-            children=[html.Button('Upload File')]),
-        html.Img(src=app.get_asset_url('TUe.png'),
-                 style= {'width': 1173*scaling_factor_images,
-                         'height': 320*scaling_factor_images}),
-        html.Img(src=app.get_asset_url('JADS.jpg'),
-                 style= {'width': 850*scaling_factor_images,
-                         'height': 280*scaling_factor_images}),
-        html.Img(src=app.get_asset_url('TiU.png'),
-                 style= {'width': 1312*scaling_factor_images,
-                         'height': 333*scaling_factor_images}),
-        html.H6('Powered by: Technical University Eindhoven, '
-                'Jheronimus Academy of Data Science and Tilburg University')
-    ])
-
-
-def DATA_DIV(filename, df):
-    return html.Div([
-        html.H5(filename),
-        dcc.Store(id='memory-output'),
-        dcc.Dropdown(
-            options=[
-                {'label': 'Fast', 'value': 'a'},
-                {'label': 'Regular', 'value': 'b'},
-                {'label': 'Full', 'value': 'c'},
-            ],
-            placeholder="Select a preset",
-            id='outlier_preset',
-            style={'width': "30%"}
-        ),
-        dcc.Dropdown(
-            options=[
-                {'label': 'Isolation Forest', 'value': 0},
-                {'label': 'Cluster-based Local Outlier Factor', 'value': 1},
-                {'label': 'Minimum Covariance Determinant (MCD)', 'value': 2},
-                {'label': 'Principal Component Analysis (PCA)', 'value': 3},
-                {'label': 'Angle-based Outlier Detector (ABOD)', 'value': 4},
-                {'label': 'Histogram-base Outlier Detection (HBOS)', 'value': 5},
-                {'label': 'K Nearest Neighbors (KNN)', 'value': 6},
-                {'label': 'Local Outlier Factor (LOF)', 'value': 7},
-                {'label': 'Feature Bagging', 'value': 8},
-                {'label': 'One-class SVM (OCSVM)', 'value': 9},
-            ],
-            multi=True,
-            placeholder="Select at least 2",
-            id='outlier_custom_setting',
-            style={'width': "50%"}
-        ),
-        html.Button('Detect outliers!', id='submit_outlier'),
-        dcc.Dropdown(
-            multi=True,
-            placeholder="Select columns to normalize",
-            id='normalize_selection',
-            style={'width': "50%"}
-        ),
-        dcc.Input(
-            id='normalize_range',
-            placeholder='Range (i.e. "0,1")',
-            type='text',
-            value=''
-        ),
-        html.Button('Normalize!', id='submit_normalize'),
-        dash_table.DataTable(
-            id='datatable',
-            columns=[
-                {"name": i, "id": i, "deletable": True} for i in df.columns
-            ],
-            data=df.to_dict('records'),
-            editable=True,
-            filtering=True,
-            sorting=True,
-            sorting_type="multi",
-            row_selectable="multi",
-            row_deletable=True,
-            selected_rows=[],
-            pagination_mode="fe",
-            pagination_settings={
-                "displayed_pages": 1,
-                "current_page": 0,
-                "page_size": 50,
-            },
-            navigation="page",
-        ),
-        html.A(html.Button('Download current data', id='download-button'), id='download-link',
-               download="cleandata.csv",
-               href="",
-               target="_blank"),
-        html.Div(id='datatable-interactivity-container')
-    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
-    )
-
-
 class DataSet:
     """ Class to keep track of all uploaded datasets """
+
     # TODO, move this class
     def __init__(self):
         self.datasets = {}
@@ -162,104 +69,9 @@ class DataSet:
         return self.datasets.get(filename)
 
 
-# TODO use own parser @yuri
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(',')
-    global df
-    global df_updated
-
-    decoded = base64.b64decode(content_string)
-    try:
-        if 'csv' in filename:
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
-
-    return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
-        dcc.Store(id='memory-output'),
-        dcc.Dropdown(
-            options=[
-                {'label': 'Fast', 'value': 'a'},
-                {'label': 'Regular', 'value': 'b'},
-                {'label': 'Full', 'value': 'c'},
-            ],
-            placeholder="Select a preset",
-            id='outlier_preset',
-            style={'width': "30%"}
-        ),
-        dcc.Dropdown(
-            options=[
-                {'label': 'Isolation Forest', 'value': 0},
-                {'label': 'Cluster-based Local Outlier Factor', 'value': 1},
-                {'label': 'Minimum Covariance Determinant (MCD)', 'value': 2},
-                {'label': 'Principal Component Analysis (PCA)', 'value': 3},
-                {'label': 'Angle-based Outlier Detector (ABOD)', 'value': 4},
-                {'label': 'Histogram-base Outlier Detection (HBOS)', 'value': 5},
-                {'label': 'K Nearest Neighbors (KNN)', 'value': 6},
-                {'label': 'Local Outlier Factor (LOF)', 'value': 7},
-                {'label': 'Feature Bagging', 'value': 8},
-                {'label': 'One-class SVM (OCSVM)', 'value': 9},
-            ],
-            multi=True,
-            placeholder="Select at least 2",
-            id='outlier_custom_setting',
-            style={'width': "50%"}
-        ),
-        html.Button('Detect outliers!', id='submit_outlier'),
-        dcc.Dropdown(
-            multi=True,
-            placeholder="Select columns to normalize",
-            id='normalize_selection',
-            style={'width': "50%"}
-        ),
-        dcc.Input(
-            id='normalize_range',
-            placeholder='Range (i.e. "0,1")',
-            type='text',
-            value=''
-        ),
-        html.Button('Normalize!', id='submit_normalize'),
-        dash_table.DataTable(
-            id='datatable',
-            columns=[
-                {"name": i, "id": i, "deletable": True} for i in df.columns
-            ],
-            data=df.to_dict('records'),
-            editable=True,
-            filtering=True,
-            sorting=True,
-            sorting_type="multi",
-            row_selectable="multi",
-            row_deletable=True,
-            selected_rows=[],
-            pagination_mode="fe",
-            pagination_settings={
-                "displayed_pages": 1,
-                "current_page": 0,
-                "page_size": 50,
-            },
-            navigation="page",
-        ),
-        html.A(html.Button('Download current data', id='download-button'), id='download-link',
-               download="cleandata.csv",
-               href="",
-               target="_blank"),
-        html.Div(id='datatable-interactivity-container')
-    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
-    )
-
-
 UI_data = DataSet()
+
+
 @app.callback(Output('tabs_container', 'children'),
               [Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
@@ -291,40 +103,46 @@ def upload_data(contents: list, filenames: list, dates: list, current_tabs: list
         return dcc.Tabs(id='tabs', value='main', children=current_tabs)
 
 
+'''
+@app.callback(Output('cleaning-tabs-container', 'children'),
+              [Input('tabs-cleaning', 'value')],)
+def render_cleaningtab(tab):
+    if tab == 'BandB':
+        return layout_bandB()
+    if tab == 'BandA':
+        return layout_bandA()
+    if tab == 'Plots':
+        return layout_plots()
+
+'''
+
+
 @app.callback(Output('output-data-upload', 'children'),
               [Input('tabs', 'value')])
 def render_data(tab):
     if UI_data.get_dataset(tab) is None:
         # TODO, CREATE MAIN PAGE
-        return main_page()
+        return layout_main()
     else:
         return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
 
-"""
-@app.callback(Output('output-data-upload', 'children'),
-              [Input('upload-data', 'contents')],
-              [State('upload-data', 'filename'),
-               State('upload-data', 'last_modified')])
-def update_table(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-        return children
-"""
 
 @app.callback(
     Output('memory-output', 'data'),
     [Input('submit_outlier', 'n_clicks'),
-     Input('submit_normalize', 'n_clicks')],
-    state=[State('outlier_custom_setting', 'value'),
-           State('normalize_selection', 'value'),
-           State('normalize_range', 'value'),
-           State('datatable', 'derived_virtual_data'),
-           ])
-def process_input(outlier_submit, normalize_submit, outlier_setting, normalize_selection,
-                  normalize_range, data):
-    # TODO use current derived_virtual_data
+     Input('submit_normalize', 'n_clicks'),
+     Input('submit_missing', 'n_clicks'),
+     Input('data-types', 'n_clicks')],
+    [State('outlier_custom_setting', 'value'),
+     State('normalize_selection', 'value'),
+     State('missing_setting', 'value'),
+     State('dropdown-missing', 'value'),
+     State('normalize_range', 'value'),
+     State('datatable', 'derived_virtual_data'),
+     ])
+def process_input(outlier_submit, normalize_submit, missing_submit, datatypes_submit, outlier_setting,
+                  normalize_selection,
+                  missing_setting, missing_navalues, normalize_range, data):
     df = pd.DataFrame(data)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -334,6 +152,15 @@ def process_input(outlier_submit, normalize_submit, outlier_setting, normalize_s
             return df_updated.to_dict("records")
     if button_clicked == 'submit_normalize' is not None and normalize_range is not None and normalize_submit is not None:
         df_updated = normalize(df, normalize_selection, tuple(int(i) for i in normalize_range.split(',')))
+        return df_updated.to_dict("records")
+    if button_clicked == 'submit_missing' is not None:
+        df_updated = handle_missing(df, missing_setting, missing_navalues)
+        return df_updated.to_dict("records")
+    if button_clicked == 'data-types' is not None:
+        print(df.dtypes)
+        print(df.infer_objects().dtypes)
+        df_updated = discover_types(df)
+        print(df_updated)
         return df_updated.to_dict("records")
 
 
@@ -407,13 +234,72 @@ def on_data_set_table(data):
 
 @app.callback(Output('outlier_custom_setting', 'value'),
               [Input('outlier_preset', 'value')])
-def on_data_set_table(value):
+def preset_outliers(value):
     if value == 'a':
         return [0, 1, 2, 3]
     if value == 'b':
         return [0, 1, 2, 3, 4, 5, 6, 7]
     if value == 'c':
         return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+
+@app.callback(
+    Output('dropdown-missing', 'options'),
+    [Input('add-missing', 'n_clicks')],
+    [State('input-missing', 'value'),
+     State('dropdown-missing', 'options')],
+)
+def add_missing_character(click, new_value, current_options):
+    ctx = dash.callback_context
+    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    if button_clicked == 'add-missing':
+        current_options.append({'label': new_value, 'value': new_value})
+        return current_options
+
+
+@app.callback(Output('plotstab', 'children'),
+              [Input('boxplot', 'n_clicks'),
+               Input('distribution', 'n_clicks')],
+              [State('datatable', 'derived_virtual_data'),
+               State('boxplot-setting', 'value')]
+              )
+def plots(boxplot_click, distri_click, data, setting):
+    ctx = dash.callback_context
+    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    if button_clicked == 'boxplot':
+        df_ = pd.DataFrame(data)
+        df_ = df_.select_dtypes(include=[np.number])
+
+        if setting == 'scaled':
+            ss = StandardScaler()
+            df_ = ss.fit_transform(df_)
+            df_ = pd.DataFrame(df_, columns=df_.columns)
+        data = []
+        for i in df_.columns:
+            data.append(go.Box(
+                y=df_[i],
+                name=i
+            ))
+
+        return layout_boxplot(data)
+
+    if button_clicked == 'distribution':
+        df_ = pd.DataFrame(data)
+        # df_ = df_.select_dtypes(include=['category'])
+        # print(df_)
+        df_ = df_.apply(pd.value_counts)
+        data = []
+        for i in range(df_.shape[0]):
+            trace_temp = go.Bar(
+                x=np.asarray(df_.columns),
+                y=df_.values[i],
+                name=df_.index[i]
+            )
+            data.append(trace_temp)
+
+        return layout_distriplot(data)
 
 
 if __name__ == '__main__':
