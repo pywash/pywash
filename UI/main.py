@@ -103,20 +103,6 @@ def upload_data(contents: list, filenames: list, dates: list, current_tabs: list
         return dcc.Tabs(id='tabs', value='main', children=current_tabs)
 
 
-'''
-@app.callback(Output('cleaning-tabs-container', 'children'),
-              [Input('tabs-cleaning', 'value')],)
-def render_cleaningtab(tab):
-    if tab == 'BandB':
-        return layout_bandB()
-    if tab == 'BandA':
-        return layout_bandA()
-    if tab == 'Plots':
-        return layout_plots()
-
-'''
-
-
 @app.callback(Output('output-data-upload', 'children'),
               [Input('tabs', 'value')])
 def render_data(tab):
@@ -205,7 +191,7 @@ def update_datatable_styling(columns):
             },
             'backgroundColor': '#8b0000',
             'color': 'white',
-        }
+        },
     ]
 
 
@@ -230,6 +216,19 @@ def on_data_set_table(data):
     return [
         {"label": i, "value": i} for i in eligible_features
     ]
+
+@app.callback(Output('missing-status', 'children'),
+              [Input('datatable', 'data')])
+def missing_status(data):
+    df = pd.DataFrame(data)
+    if pd.isnull(df).values.any():
+        return html.Div('Status: {}'.format('Missing data detected!'),
+                 style={'color': 'red', 'fontSize': 15})
+    else:
+        return html.Div('Status: {}'.format('No missing data detected'),
+                        style={'color': 'green', 'fontSize': 15})
+
+
 
 
 @app.callback(Output('outlier_custom_setting', 'value'),
@@ -256,6 +255,8 @@ def add_missing_character(click, new_value, current_options):
     if button_clicked == 'add-missing':
         current_options.append({'label': new_value, 'value': new_value})
         return current_options
+
+
 
 
 @app.callback(Output('plotstab', 'children'),

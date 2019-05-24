@@ -73,7 +73,7 @@ def identify_missing_mechanism(df=None):
     #     display(df.isnull().corr())
     df2 = df.iloc[:, :-1].copy()
     missing_columns = df2.columns[df2.isnull().any(axis=0)]  # columns containing missing values
-    # relace nan as true, otherwise false for features containing missing values
+    # replace nan as true, otherwise false for features containing missing values
     df2[df2.columns[df2.isnull().any(axis=0)]] = df2[df2.columns[df2.isnull().any(axis=0)]].isnull()
     df2[missing_columns] = df2[missing_columns].astype(int)  # replace true as 1, false as 0
     df_missing_corr = df2.corr()[
@@ -90,9 +90,9 @@ def identify_missing_mechanism(df=None):
         if list_high_corr:
             flag_mar = True
     if flag_mar:
-        display(HTML('<bold>Missing mechanism is probably missing at random</bold>'))
+        print('Missing mechanism is probably missing at random')
     else:
-        display(HTML('<bold>Missing mechanism is probably missing completely at random</bold>'))
+        print('Missing mechanism is probably missing completely at random')
 
 
 #     tri_lower_no_diag = np.tril(df.isnull().corr(), k=-1)
@@ -104,18 +104,6 @@ def identify_missing_mechanism(df=None):
 #     else:
 #         display(HTML('<bold>Missing mechanism is hard to guess</bold>'))
 
-def visualize_missing(df=None):
-    """Visualize missing values.
-    The missingness of the dataset is visualized in bar chart,
-    matrix and heatmap.
-    """
-    print("")
-    display(HTML('<h4>Visualize Missing Data ...</h4>'))
-    print("")
-    msno.matrix(df, figsize=(6, 4), fontsize=12)
-    msno.bar(df, figsize=(6, 4), fontsize=12)
-    msno.heatmap(df, figsize=(6, 4), fontsize=12)
-    plt.show()
 
 
 def missing_preprocess(features, df=None):
@@ -316,33 +304,32 @@ def clean_missing(df, features, setting):
         print("Default MAR")
         recommend = deal_mar(df_preprocessed)
 
-    ans = 'y'
-    if ans == 'y':
-        if recommend == 'mean':
-            print("Applying mean imputation ...")
-            Xy_filled = Imputer(missing_values=np.nan, strategy='mean').fit_transform(df_preprocessed.values)
-            print("Missing values cleaned!")
-        elif recommend == 'mode':
-            print("Applying mode imputation ...")
-            Xy_filled = Imputer(missing_values=np.nan, strategy='most_frequent').fit_transform(df_preprocessed.values)
-            print("Missing values cleaned!")
-        elif recommend == 'knn':
-            print("Applying knn imputation ...")
-            with NoStdStreams():
-                Xy_filled = KNN().fit_transform(df_preprocessed.values);
-            print("Missing values cleaned!")
-        elif recommend == 'matrix factorization':
-            print("Applying matrix factorization ...")
-            with NoStdStreams():
-                Xy_filled = MatrixFactorization().fit_transform(df_preprocessed.values);
-            print("Missing values cleaned!")
-        elif recommend == 'multiple imputation':
-            print("Applying multiple imputation ...")
-            with NoStdStreams():
-                Xy_filled = IterativeImputer().fit_transform(df_preprocessed.values)
-            print("Missing values cleaned!")
-        else:
-            print("Error: Approach not available!")
+
+    if recommend == 'mean':
+        print("Applying mean imputation ...")
+        Xy_filled = Imputer(missing_values=np.nan, strategy='mean').fit_transform(df_preprocessed.values)
+        print("Missing values cleaned!")
+    elif recommend == 'mode':
+        print("Applying mode imputation ...")
+        Xy_filled = Imputer(missing_values=np.nan, strategy='most_frequent').fit_transform(df_preprocessed.values)
+        print("Missing values cleaned!")
+    elif recommend == 'knn':
+        print("Applying knn imputation ...")
+        with NoStdStreams():
+            Xy_filled = KNN().fit_transform(df_preprocessed.values);
+        print("Missing values cleaned!")
+    elif recommend == 'matrix factorization':
+        print("Applying matrix factorization ...")
+        with NoStdStreams():
+            Xy_filled = MatrixFactorization().fit_transform(df_preprocessed.values);
+        print("Missing values cleaned!")
+    elif recommend == 'multiple imputation':
+        print("Applying multiple imputation ...")
+        with NoStdStreams():
+            Xy_filled = IterativeImputer().fit_transform(df_preprocessed.values)
+        print("Missing values cleaned!")
+    else:
+        print("Error: Approach not available!")
     return features_new, Xy_filled
 
 

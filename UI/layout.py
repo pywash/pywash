@@ -32,10 +32,15 @@ def layout_main():
 
 def DATA_DIV(filename, df):
     return html.Div([
+        html.Div([
+            html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
+            html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))
+        ], id='data-quality',
+            style={'marginBottom': 25, 'marginTop': 25}),
         html.Div(id='cleaning-tabs-container', children=[
             dcc.Tabs(id="tabs-cleaning", value='BandB', children=[
-                dcc.Tab(id='BandA_tab',label='BandB', value='BandB', children=layout_bandB()),
-                dcc.Tab(id='BandB_tab',label='BandA', value='BandA', children=layout_bandA()),
+                dcc.Tab(id='BandA_tab', label='BandB', value='BandB', children=layout_bandB()),
+                dcc.Tab(id='BandB_tab', label='BandA', value='BandA', children=layout_bandA()),
                 dcc.Tab(id='plotstab', label='Plots', value='Plots', children=layout_plots()),
             ]),
         ]),
@@ -73,6 +78,7 @@ def DATA_DIV(filename, df):
 
 def layout_bandA():
     return html.Div([
+        dcc.Markdown('''###### Outlier Detection'''),
         dcc.Dropdown(
             options=[
                 {'label': 'Fast', 'value': 'a'},
@@ -102,6 +108,7 @@ def layout_bandA():
             style={'width': "50%"}
         ),
         html.Button('Detect outliers!', id='submit_outlier'),
+        dcc.Markdown('''###### Normalization'''),
         dcc.Dropdown(
             multi=True,
             placeholder="Select columns to normalize",
@@ -115,11 +122,13 @@ def layout_bandA():
             value=''
         ),
         html.Button('Normalize!', id='submit_normalize'),
-    ])
+    ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
 def layout_bandB():
     return html.Div([
+        dcc.Markdown('''###### Missing values'''),
+        html.Div(id='missing-status'),
         dcc.Dropdown(
             id='dropdown-missing',
             options=[
@@ -133,8 +142,8 @@ def layout_bandB():
             style={'width': "50%"}
 
         ),
+        dcc.Markdown('''###### Data types'''),
         dcc.Input(id='input-missing', value='', placeholder="Add extra character"),
-        html.Button('Add Option', id='add-missing'),
         dcc.RadioItems(
             options=[
                 {'label': 'mcar', 'value': 'mcar'},
@@ -146,8 +155,9 @@ def layout_bandB():
             labelStyle={'display': 'inline-block'}
         ),
         html.Button('Fix missing values!', id='submit_missing'),
+        html.Button('Add Option', id='add-missing'),
         html.Button('Fix data types!', id='data-types'),
-    ])
+    ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
 def layout_plots():
