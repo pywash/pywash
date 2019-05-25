@@ -1,9 +1,7 @@
 import datacleanbot.dataclean as dc
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from IPython.core.display import display, HTML
 import time
 from pyod.models.knn import KNN as knn

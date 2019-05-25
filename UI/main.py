@@ -2,7 +2,6 @@ import urllib
 
 import dash
 from dash.dependencies import Input, Output, State
-import dash_table
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
@@ -63,7 +62,7 @@ app.layout = html.Div(
                                                  open=False,
                                                  modal=False,
                                                  children=[html.H1('Not enough datasets selected')],
-                                                 #actions=[html.H3('OK'), html.H3('Nah man')]
+                                                 # actions=[html.H3('OK'), html.H3('Nah man')]
                                                  )]),
         html.Div(id='tabs_container', children=[dcc.Tabs(id='tabs')]),
         html.Div(id='output-data-upload'),
@@ -81,6 +80,7 @@ app.layout = html.Div(
 def upload_data(n_clicks, contents: list,
                 filenames: list, dates: list, current_tabs: list, merging_datasets: list):
     """ Callback to add/remove datasets from memory and update the tabs """
+
     def create_tab_interface(tabs: list, warning: bool = False):
         """ Creates the tabs object that the main function should return """
         return dcc.Tabs(id='tabs', value='main', children=tabs), warning
@@ -139,7 +139,9 @@ def upload_data(n_clicks, contents: list,
                     UI_data.add_dataset(merged_sdf.name, merged_sdf)
                     # Remove datasets from the tabs and add the merged dataset
                     # TODO Remove datasets from UI_data
-                    current_tabs.remove({'props': {'children': None, 'label': sdf.name, 'value': sdf.name}, 'type': 'Tab', 'namespace': 'dash_core_components'})
+                    current_tabs.remove(
+                        {'props': {'children': None, 'label': sdf.name, 'value': sdf.name}, 'type': 'Tab',
+                         'namespace': 'dash_core_components'})
                     current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
         return create_tab_interface(current_tabs)
 
@@ -220,7 +222,7 @@ def update_datatable_styling(columns):
         {
             'if': {
                 'column_id': 'probability',
-                'filter': 'probability > num(0.9999995)'
+                'filter': '{probability} > 0.9999995'
             },
             'backgroundColor': '#a3524e',
             'color': 'white',
@@ -228,7 +230,7 @@ def update_datatable_styling(columns):
         {
             'if': {
                 'column_id': 'prediction',
-                'filter': 'prediction eq num(1)'
+                'filter': '{prediction} eq 1'
             },
             'backgroundColor': '#8b0000',
             'color': 'white',
@@ -258,18 +260,17 @@ def on_data_set_table(data):
         {"label": i, "value": i} for i in eligible_features
     ]
 
+
 @app.callback(Output('missing-status', 'children'),
               [Input('datatable', 'data')])
 def missing_status(data):
     df = pd.DataFrame(data)
     if pd.isnull(df).values.any():
         return html.Div('Status: {}'.format('Missing data detected!'),
-                 style={'color': 'red', 'fontSize': 15})
+                        style={'color': 'red', 'fontSize': 15})
     else:
         return html.Div('Status: {}'.format('No missing data detected'),
                         style={'color': 'green', 'fontSize': 15})
-
-
 
 
 @app.callback(Output('outlier_custom_setting', 'value'),
@@ -296,8 +297,6 @@ def add_missing_character(click, new_value, current_options):
     if button_clicked == 'add-missing':
         current_options.append({'label': new_value, 'value': new_value})
         return current_options
-
-
 
 
 @app.callback(Output('plotstab', 'children'),

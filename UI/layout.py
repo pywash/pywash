@@ -203,7 +203,12 @@ def layout_boxplot(data):
         html.Button('Categorical distribution', id='distribution'),
         dcc.Graph(
             figure={
-                'data': data
+                'data': data,
+                'layout': go.Layout(
+                    xaxis={
+                        'type' : 'category',
+                    }
+                )
             })
     ])
 
@@ -224,6 +229,9 @@ def layout_distriplot(data):
                 'data': data,
                 'layout': go.Layout(
                     barmode='stack',
+                    xaxis={
+                        'type': 'category',
+                    }
                 )
             })
     ])
