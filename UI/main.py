@@ -6,6 +6,7 @@ import dash_table
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
+import sd_material_ui
 import pandas as pd
 import base64
 import io
@@ -19,8 +20,10 @@ from src.BandB.DataTypes import discover_types
 from src.BandB.MissingValues import handle_missing
 from src.SharedDataFrame import SharedDataFrame
 from UI import utils
+from UI.storage import DataSets
 import numpy as np
 
+UI_data = DataSets()
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -47,60 +50,98 @@ app.layout = html.Div(
             # Allow multiple files to be uploaded
             multiple=True
         ),
+        # Section to store popups in client browser
+        # TODO move Dialogs to layout file
+        html.Div(children=[sd_material_ui.Dialog(id='welcome',
+                                                 open=True,
+                                                 modal=False,
+                                                 children=[html.H1('Welcome to PyWash'),
+                                                           html.P('Pywash is a very intersting tool.'),
+                                                           html.P('I don\'t know what to write')],
+                                                 ),
+                           sd_material_ui.Dialog(id='merge-warning',
+                                                 open=False,
+                                                 modal=False,
+                                                 children=[html.H1('Not enough datasets selected')],
+                                                 #actions=[html.H3('OK'), html.H3('Nah man')]
+                                                 )]),
         html.Div(id='tabs_container', children=[dcc.Tabs(id='tabs')]),
         html.Div(id='output-data-upload'),
     ])
 
 
-class DataSet:
-    """ Class to keep track of all uploaded datasets """
-
-    # TODO, move this class
-    def __init__(self):
-        self.datasets = {}
-
-    def add_dataset(self, filename, sdf: SharedDataFrame):
-        self.datasets.update({filename: sdf})
-
-    def get_datasets(self):
-        return self.datasets
-
-    def get_dataset(self, filename):
-        return self.datasets.get(filename)
-
-
-UI_data = DataSet()
-
-
-@app.callback(Output('tabs_container', 'children'),
-              [Input('upload-data', 'contents')],
+@app.callback([Output('tabs_container', 'children'),
+               Output('merge-warning', 'open')],
+              [Input('button-merge', 'n_clicks'),
+               Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified'),
-               State('tabs', 'children')])
-def upload_data(contents: list, filenames: list, dates: list, current_tabs: list):
-    if filenames is None:
-        if current_tabs is None:
-            created_tabs = [dcc.Tab(id='main', label='Main', value='main')]
-        else:
-            created_tabs = current_tabs
-        return dcc.Tabs(id='tabs', children=created_tabs)
-    if filenames is not None:
-        print("loading datasets: " + str(filenames))
-        # Load the datasets into the Dataset object for storage
-        for i in range(len(filenames)):
-            print(contents)
-            new_dataset = SharedDataFrame(file_path=filenames[i],
-                                          contents=contents.pop(),
-                                          verbose=True)
-            UI_data.add_dataset(new_dataset.name, new_dataset)
-            filenames[i] = new_dataset.name
-        # Add filenames to the tabs
-        created_tabs = [dcc.Tab(label=name, value=name)
-                        for name in filenames]
-        # TODO Use dataset name instead of filepath as header
-        # TODO Test for duplicates and separate them
-        current_tabs.extend(created_tabs)
-        return dcc.Tabs(id='tabs', value='main', children=current_tabs)
+               State('tabs', 'children'),
+               State('dropdown-merging', 'value')])
+def upload_data(n_clicks, contents: list,
+                filenames: list, dates: list, current_tabs: list, merging_datasets: list):
+    """ Callback to add/remove datasets from memory and update the tabs """
+    def create_tab_interface(tabs: list, warning: bool = False):
+        """ Creates the tabs object that the main function should return """
+        return dcc.Tabs(id='tabs', value='main', children=tabs), warning
+
+    ctx = dash.callback_context
+    print(ctx.triggered)
+    print(contents)
+    last_event = ctx.triggered[0]['prop_id'].split('.')[0]
+    if current_tabs is None:
+        current_tabs = [dcc.Tab(id='main', label='Main', value='main')]
+    if last_event == 'upload-data':
+        # A dataset was uploaded
+        if filenames is None:
+            return create_tab_interface(current_tabs)
+        if filenames is not None:
+            print("loading datasets: " + str(filenames))
+            # Load the datasets into the Dataset object for storage
+            for i in range(len(filenames)):
+                # Load all datasets one by one
+                new_dataset = SharedDataFrame(file_path=filenames[i],
+                                              contents=contents.pop(),
+                                              verbose=True)
+                # If a dataset is already loaded, load with an appended name
+                name_appendix = 1
+                while new_dataset.name in UI_data.keys():
+                    new_dataset.name = new_dataset.name + '_{}'.format(name_appendix)
+                    name_appendix += 1
+                # Add the dataset to our storage system
+                UI_data.add_dataset(new_dataset.name, new_dataset)
+                filenames[i] = new_dataset.name
+            # Add filenames to the tabs
+            created_tabs = [dcc.Tab(label=name, value=name)
+                            for name in filenames]
+            current_tabs.extend(created_tabs)
+            return create_tab_interface(current_tabs)
+
+    elif last_event == 'button-merge':
+        # Datasets were submitted to be merged
+        # Test for mergeability, merge and remove left-overs
+        if merging_datasets is None or len(merging_datasets) < 2:
+            # TODO Develop warning a bit more
+            return create_tab_interface(current_tabs, True)
+        datasets = [UI_data.get_dataset(dataset) for dataset in merging_datasets]
+        # Check which datasets can be merged
+        # TODO, Datasets will now double merge
+        for dataset in datasets:
+            for sdf in datasets:
+                if sdf == dataset:
+                    continue
+                if sdf.is_mergeable(dataset):
+                    # Datasets can be merged, confirm and merge
+                    # TODO, the ask and confirm part
+                    # Merge datasets
+                    merged_df = sdf.merge(dataset)
+                    merged_sdf = SharedDataFrame(name=sdf.name + '+' + dataset.name, df=merged_df)
+                    UI_data.add_dataset(merged_sdf.name, merged_sdf)
+                    # Remove datasets from the tabs and add the merged dataset
+                    # TODO Remove datasets from UI_data
+                    current_tabs.remove({'props': {'children': None, 'label': sdf.name, 'value': sdf.name}, 'type': 'Tab', 'namespace': 'dash_core_components'})
+                    current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
+        return create_tab_interface(current_tabs)
 
 
 @app.callback(Output('output-data-upload', 'children'),
@@ -108,7 +149,7 @@ def upload_data(contents: list, filenames: list, dates: list, current_tabs: list
 def render_data(tab):
     if UI_data.get_dataset(tab) is None:
         # TODO, CREATE MAIN PAGE
-        return layout_main()
+        return layout_main(UI_data)
     else:
         return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
 

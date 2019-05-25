@@ -6,7 +6,7 @@ import plotly.graph_objs as go
 from UI.main import app
 
 
-def layout_main():
+def layout_main(datasets):
     scaling_factor_images = 0.3
     return html.Div([
         html.H2("Welcome to the Pywash browser interface"),
@@ -16,6 +16,7 @@ def layout_main():
             id='upload-data',
             multiple=True,
             children=[html.Button('Upload File')]),
+        merge_component(datasets),
         html.Img(src=app.get_asset_url('TUe.png'),
                  style={'width': 1173 * scaling_factor_images,
                         'height': 320 * scaling_factor_images}),
@@ -27,6 +28,22 @@ def layout_main():
                         'height': 333 * scaling_factor_images}),
         html.H6('Powered by: Technical University Eindhoven, '
                 'Jheronimus Academy of Data Science and Tilburg University')
+    ])
+
+
+def merge_component(datasets):
+    return html.Div([
+        html.H5("Dataset merger:"),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown-merging',
+                options=[{'label': x, 'value': x} for x in datasets.get_names()],
+                multi=True,
+                placeholder='Select 2 or more datasets to merge',
+                style={'width': "50%"}
+            ),
+            html.Button('Submit', id='button-merge')
+        ])
     ])
 
 

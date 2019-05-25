@@ -1,6 +1,7 @@
 from src.Parsers.ParserUtil import assign_parser
 from src.Exceptions import *
 from pandas.core.frame import DataFrame
+import os
 
 
 class SharedDataFrame:
@@ -8,7 +9,7 @@ class SharedDataFrame:
     Main Abstract Data Type to store, process and use the data
     """
     def __init__(self, file_path: str = None, contents: str = None, df: DataFrame = None,
-                 verbose: bool = False):
+                 name: str = None, verbose: bool = False):
         """ Initializes the SharedDataFrame
         Can be given a path to a file to parse
          or a dataset as string needed to be parsed
@@ -23,10 +24,12 @@ class SharedDataFrame:
         if file_path is not None:
             self.parser = assign_parser(file_path=file_path, contents=contents, verbose=verbose)
             self._load_data()
+            self.name = self.parser.name
         # When a DataFrame is given, set the DataFrame as the SharedDataFrame data
         elif df is not None:
             self.set_data(df)
-        self.name = self.parser.name
+        if name is not None:
+            self.name = name
 
     def __repr__(self):
         # TODO, create representation
@@ -45,6 +48,14 @@ class SharedDataFrame:
 
     def get_dataframe(self):
         return self.data
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        self._name = new_name
 
     def analyze_data(self):
         """ Determine band value of dataset """
