@@ -2,6 +2,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import plotly.graph_objs as go
+import plotly.figure_factory as ff
+import pandas as pd
 
 from UI.main import app
 
@@ -56,7 +58,8 @@ def DATA_DIV(filename, df):
             style={'marginBottom': 25, 'marginTop': 25}),
         html.Div(id='cleaning-tabs-container', children=[
             dcc.Tabs(id="tabs-cleaning", value='BandB', children=[
-                dcc.Tab(id='BandA_tab', label='BandB', value='BandB', children=layout_bandB()),
+                dcc.Tab(id='BandA_tab', label='BandB', value='BandB',
+                        children=layout_bandB(pd.DataFrame(df.dtypes, columns=['d_type']))),
                 dcc.Tab(id='BandB_tab', label='BandA', value='BandA', children=layout_bandA()),
                 dcc.Tab(id='plotstab', label='Plots', value='Plots', children=layout_plots()),
             ]),
@@ -142,7 +145,12 @@ def layout_bandA():
     ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
-def layout_bandB():
+def layout_bandB(columntypes):
+    dtypes = [item for sublist in columntypes.values for item in sublist]
+    dtypes = [str(i) for i in dtypes]
+    columntypes['d_type'] = dtypes
+    columntypes = columntypes.transpose()
+    pandas_types = ['object', 'float64', 'int64', 'bool', 'category', 'datetime64']
     return html.Div([
         dcc.Markdown('''###### Missing values'''),
         html.Div(id='missing-status'),
@@ -159,7 +167,6 @@ def layout_bandB():
             style={'width': "50%"}
 
         ),
-        dcc.Markdown('''###### Data types'''),
         dcc.Input(id='input-missing', value='', placeholder="Add extra character"),
         dcc.RadioItems(
             options=[
@@ -173,40 +180,50 @@ def layout_bandB():
         ),
         html.Button('Fix missing values!', id='submit_missing'),
         html.Button('Add Option', id='add-missing'),
-        html.Button('Fix data types!', id='data-types'),
+        dcc.Markdown('''###### Data types'''),
+        dash_table.DataTable(
+            id='table-dropdown',
+            data=columntypes.to_dict('records'),
+            columns=[
+                {"name": i, "id": i, 'presentation': 'dropdown'} for i in columntypes.columns
+            ],
+            editable=True,
+            column_static_dropdown=[{"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
+                                    columntypes.columns]
+        ),
+        html.Button('Infer Data Types!', id='data-types'),
     ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
 def layout_plots():
-    return html.Div([dcc.Checklist(
-        options=[
-            {'label': 'scale', 'value': 'scaled'},
-        ],
-        values=['scaled'],
-        id='boxplot-setting'
-    ),
+    return html.Div([
         html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='distribution')
+        html.Button('Categorical distribution', id='cat_distribution'),
+        dcc.Dropdown(
+            placeholder="Select columns to plot",
+            id='plot-selection',
+            style={'width': "50%"}
+        ),
+        html.Button('distribution', id='distribution')
     ])
 
 
 def layout_boxplot(data):
     return html.Div([
-        dcc.Checklist(
-            options=[
-                {'label': 'scale', 'value': 'scaled'},
-            ],
-            values=['scaled'],
-            id='boxplot-setting'
-        ),
         html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='distribution'),
+        html.Button('Categorical distribution', id='cat_distribution'),
+        dcc.Dropdown(
+            placeholder="Select columns to plot",
+            id='plot-selection',
+            style={'width': "50%"}
+        ),
+        html.Button('distribution', id='distribution'),
         dcc.Graph(
             figure={
                 'data': data,
                 'layout': go.Layout(
                     xaxis={
-                        'type' : 'category',
+                        'type': 'category',
                     }
                 )
             })
@@ -215,15 +232,14 @@ def layout_boxplot(data):
 
 def layout_distriplot(data):
     return html.Div([
-        dcc.Checklist(
-            options=[
-                {'label': 'scale', 'value': 'scaled'},
-            ],
-            values=['scaled'],
-            id='boxplot-setting'
-        ),
         html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='distribution'),
+        html.Button('Categorical distribution', id='cat_distribution'),
+        dcc.Dropdown(
+            placeholder="Select columns to plot",
+            id='plot-selection',
+            style={'width': "50%"}
+        ),
+        html.Button('distribution', id='distribution'),
         dcc.Graph(
             figure={
                 'data': data,
@@ -235,3 +251,17 @@ def layout_distriplot(data):
                 )
             })
     ])
+
+def layout_histoplot(data, selected_column):
+    return html.Div([
+        html.Button('Boxplot', id='boxplot'),
+        html.Button('Categorical distribution', id='cat_distribution'),
+        dcc.Dropdown(
+            placeholder="Select columns to plot",
+            id='plot-selection',
+            style={'width': "50%"}
+        ),
+        html.Button('distribution', id='distribution'),
+        dcc.Graph(figure = ff.create_distplot([data[selected_column]], [selected_column]))
+    ])
+

@@ -6,16 +6,9 @@ from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
 import sd_material_ui
-import pandas as pd
-import base64
-import io
-import datetime
-
-from sklearn.preprocessing import StandardScaler
-
 from UI.layout import *
 from src.BandA.Normalization import normalize
-from src.BandB.DataTypes import discover_types
+from src.BandB.DataTypes import discover_type_heuristic
 from src.BandB.MissingValues import handle_missing
 from src.SharedDataFrame import SharedDataFrame
 from UI import utils
@@ -160,8 +153,7 @@ def render_data(tab):
     Output('memory-output', 'data'),
     [Input('submit_outlier', 'n_clicks'),
      Input('submit_normalize', 'n_clicks'),
-     Input('submit_missing', 'n_clicks'),
-     Input('data-types', 'n_clicks')],
+     Input('submit_missing', 'n_clicks'),],
     [State('outlier_custom_setting', 'value'),
      State('normalize_selection', 'value'),
      State('missing_setting', 'value'),
@@ -169,9 +161,10 @@ def render_data(tab):
      State('normalize_range', 'value'),
      State('datatable', 'derived_virtual_data'),
      ])
-def process_input(outlier_submit, normalize_submit, missing_submit, datatypes_submit, outlier_setting,
+def process_input(outlier_submit, normalize_submit, missing_submit, outlier_setting,
                   normalize_selection,
                   missing_setting, missing_navalues, normalize_range, data):
+    print(data)
     df = pd.DataFrame(data)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -185,12 +178,19 @@ def process_input(outlier_submit, normalize_submit, missing_submit, datatypes_su
     if button_clicked == 'submit_missing' is not None:
         df_updated = handle_missing(df, missing_setting, missing_navalues)
         return df_updated.to_dict("records")
+
+@app.callback(
+    Output('table-dropdown', 'data'),
+    [Input('data-types', 'n_clicks')],
+    [State('datatable', 'derived_virtual_data')])
+def infer_datatypes(datatypes_submit, data):
+    ctx = dash.callback_context
+    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    df = pd.DataFrame(data)
     if button_clicked == 'data-types' is not None:
-        print(df.dtypes)
-        print(df.infer_objects().dtypes)
-        df_updated = discover_types(df)
-        print(df_updated)
-        return df_updated.to_dict("records")
+        inferred_types = discover_type_heuristic(df)
+        types_dict = {df.columns[i]: inferred_types[i] for i in range(0, len(df.columns))}
+        return [types_dict]
 
 
 @app.callback(Output('datatable', 'data'),
@@ -249,17 +249,16 @@ def update_download_link(data, n_clicks):
                urllib.parse.quote(df_download.to_csv(index=False, encoding='utf-8'))
 
 
-@app.callback(Output('normalize_selection', 'options'),
+@app.callback([Output('normalize_selection', 'options'),
+               Output('plot-selection', 'options')],
               [Input('datatable', 'data')])
 def on_data_set_table(data):
     if data is None:
         raise PreventUpdate
     df = pd.DataFrame(data)
     eligible_features = df.select_dtypes(include=[np.number]).columns.tolist()
-    return [
-        {"label": i, "value": i} for i in eligible_features
-    ]
-
+    eligible_features = [{"label": i, "value": i} for i in eligible_features]
+    return eligible_features, eligible_features
 
 @app.callback(Output('missing-status', 'children'),
               [Input('datatable', 'data')])
@@ -303,20 +302,16 @@ def add_missing_character(click, new_value, current_options):
               [Input('boxplot', 'n_clicks'),
                Input('distribution', 'n_clicks')],
               [State('datatable', 'derived_virtual_data'),
-               State('boxplot-setting', 'value')]
+               State('table-dropdown', 'derived_virtual_data'),
+               State('plot-selection', 'value')]
               )
-def plots(boxplot_click, distri_click, data, setting):
+def plots(boxplot_click, distri_click, data, dtypes, selected_column):
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
-
+    df_ = pd.DataFrame(data).astype(dtypes[0])
     if button_clicked == 'boxplot':
-        df_ = pd.DataFrame(data)
         df_ = df_.select_dtypes(include=[np.number])
 
-        if setting == 'scaled':
-            ss = StandardScaler()
-            df_ = ss.fit_transform(df_)
-            df_ = pd.DataFrame(df_, columns=df_.columns)
         data = []
         for i in df_.columns:
             data.append(go.Box(
@@ -326,10 +321,8 @@ def plots(boxplot_click, distri_click, data, setting):
 
         return layout_boxplot(data)
 
-    if button_clicked == 'distribution':
-        df_ = pd.DataFrame(data)
-        # df_ = df_.select_dtypes(include=['category'])
-        # print(df_)
+    if button_clicked == 'cat_distribution':
+        df_ = df_.select_dtypes(include=['category'])
         df_ = df_.apply(pd.value_counts)
         data = []
         for i in range(df_.shape[0]):
@@ -341,6 +334,10 @@ def plots(boxplot_click, distri_click, data, setting):
             data.append(trace_temp)
 
         return layout_distriplot(data)
+
+    if button_clicked == 'distribution':
+        return layout_histoplot(df_, selected_column)
+
 
 
 if __name__ == '__main__':
