@@ -98,9 +98,11 @@ def upload_data(n_clicks, contents: list,
                                               verbose=True)
                 # If a dataset is already loaded, load with an appended name
                 name_appendix = 1
-                while new_dataset.name in UI_data.keys():
-                    new_dataset.name = new_dataset.name + '_{}'.format(name_appendix)
+                temp_name = new_dataset.name
+                while temp_name in UI_data.keys():
+                    temp_name = new_dataset.name + '_{}'.format(name_appendix)
                     name_appendix += 1
+                new_dataset.name = temp_name
                 # Add the dataset to our storage system
                 UI_data.add_dataset(new_dataset.name, new_dataset)
                 filenames[i] = new_dataset.name
