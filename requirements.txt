@@ -1,3 +1,8 @@
 pandas
+numpy
+dash
 typing
 unittest
+chardet
+liac-arff
+requests

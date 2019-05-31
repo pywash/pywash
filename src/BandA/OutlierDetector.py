@@ -1,9 +1,7 @@
 import datacleanbot.dataclean as dc
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from IPython.core.display import display, HTML
 import time
 from pyod.models.knn import KNN as knn
@@ -140,19 +138,6 @@ def identify_outliers(df, features, algorithms):
         # combine all the rows containing outliers in one feature
         df_union = df_union.combine_first(dict_outliers[col])
     #             print(dict_outliers[col])
-
-    # boxplot: show outliers in each feature
-    # feature scaling
-    ss = StandardScaler()
-    df_scaled = ss.fit_transform(df_numeric)
-    df_scaled = pd.DataFrame(df_scaled, columns=df_numeric.columns)
-    df_scaled.head()
-    # draw box plot for numeric variables
-    fig = plt.figure(figsize=(6, 4))
-    fig.subplots_adjust(top=0.93, wspace=0)
-    ax = sns.boxplot(data=df_scaled, palette="Set1")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
-    plt.show()
 
     # Two options to estimate the propotion of outliers
     # One is to take the number of outliers in the feature containing most outliers

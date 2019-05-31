@@ -10,12 +10,10 @@ class URLCSV(Parser):
     """
     A CSV Parser that can automatically detect the correct csv format of online datasets.
     """
-    def parse(self):
-        if self.verbose:
-            print("Returning parsed dataset")
+    def parse_file(self):
         return self.read_data()
 
-    def detect_parameters(self):
+    def detect_dialect(self):
         if self.verbose:
             print("Detection dialect ...")
         content = self.decode_page()
@@ -49,12 +47,17 @@ class URLCSV(Parser):
                            quotechar=self.__parameters__.quotechar,
                            escapechar=self.__parameters__.escapechar)
 
+    def export(self, df, file_path: str):
+        df.to_csv(file_path)
+
 
 if __name__ == "__main__":
-    test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
-    test_2 = "https://raw.githubusercontent.com/queq/just-stuff/c1b8714664cc674e1fc685bd957eac548d636a43/pov/TopFixed/build/project_r_pad.csv"
+    test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/" \
+             "37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
+    test_2 = "https://raw.githubusercontent.com/queq/just-stuff/" \
+             "c1b8714664cc674e1fc685bd957eac548d636a43/pov/TopFixed/build/project_r_pad.csv"
     # URLCSV appears not to work on test 2.
-    p = URLCSV(test_1, True)
+    p = URLCSV(test_1, verbose=True)
     x = p.parse()
     print()
     print(x.head(5))
