@@ -65,6 +65,13 @@ class SharedDataFrame:
         """ Return the band value of the dataset """
         return self.score
 
+    def export(self, file_path: str):
+        """ Download the dataset locally
+        :param file_path: The local path to save the dataset to
+        :return:
+        """
+        self.parser.export(self.data, file_path)
+
     # Merge functions #####
     def is_mergeable(self, other_sdf) -> bool:
         """ Checks if 2 SharedDataFrames are mergeable.
