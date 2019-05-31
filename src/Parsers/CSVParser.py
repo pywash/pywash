@@ -27,11 +27,12 @@ class CSV(Parser):
             print("Detecting dialect ...")
 
         # Create string of dataset
-        if self.decoded_contents is None:
+        try:
+            csv = self.decoded_contents
+        except AttributeError:
             # Load and create a string of the dataset
             csv = self.string_data()
-        else:
-            csv = self.decoded_contents
+
         # Detect dialect based on the decoded dataset string
         dialect = ccsv.Sniffer().sniff(csv, verbose=self.verbose)
         # self.test = dialect.to_csv_dialect() TODO try and use the to_csv_dialect function
@@ -58,6 +59,10 @@ class CSV(Parser):
                            quoting=quoting,
                            quotechar=self.__parameters__.quotechar,
                            escapechar=self.__parameters__.escapechar)
+
+    def export(self, df, file_path: str):
+        df.to_csv(file_path)
+
 
 
 if __name__ == "__main__":

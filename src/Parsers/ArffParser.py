@@ -1,6 +1,7 @@
 from src.Parsers.Parser import Parser
 import arff
 import pandas as pd
+from pandas.core.frame import DataFrame
 
 
 class Arff(Parser):
@@ -35,6 +36,13 @@ class Arff(Parser):
         # Attribute types are either 'REAL', 'INTEGER', 'NUMERIC' or a list of values (NOMINAL???)
         self.attributes = weka['attributes']
         self.data = weka['data']
+
+    def export(self, df: DataFrame, file_path: str):
+        arff_file = {'relation': self.name,
+                     'description': self.description,
+                     'attributes': self.attributes,
+                     'data': self.data}
+        arff.dump(arff_file, open(file_path, 'w'))
 
 
 if __name__ == '__main__':

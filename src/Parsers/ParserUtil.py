@@ -36,10 +36,10 @@ def assign_parser(file_path: str, contents: str = None, verbose: bool = False) -
 
 
 if __name__ == "__main__":
-    p = assign_parser("C:/AAA_School/Assignments/BEP/Datasets/Test.csv", True)
+    p = assign_parser("C:/AAA_School/Assignments/BEP/Datasets/Test.csv", verbose=True)
     print()
     print(p)
-    print(p.get_dialect())
+    print(p.get_dialect)
     print()
     print(p.parse_file().head(5))
     print('Done')

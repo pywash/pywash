@@ -55,17 +55,27 @@ class Parser:
 
     def parse_file(self) -> DataFrame:
         """ Parses file based on file-format and file dialect """
-        pass
+        raise NotImplementedError(
+            'This method has not been implemented for this parser, {}'.format(self.__class__.__name__))
 
     def parse_content(self) -> DataFrame:
         """ Parses a string of content based on detected dialect """
-        pass
+        raise NotImplementedError(
+            'This method has not been implemented for this parser, {}'.format(self.__class__.__name__))
 
     def detect_dialect(self) -> None:
         """
         Detects the dialect (formatting) a file uses to store data, required for parsing correctly
         """
         self.__parameters__ = None
+
+    def export(self, df: DataFrame, file_path: str):
+        """ Download the dataset locally
+        :param file_path: The local path to save the dataset to
+        :return:
+        """
+        raise NotImplementedError(
+            'This method has not been implemented for this parser, {}'.format(self.__class__.__name__))
 
     @property
     def get_dialect(self):

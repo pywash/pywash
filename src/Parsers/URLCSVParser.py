@@ -47,6 +47,9 @@ class URLCSV(Parser):
                            quotechar=self.__parameters__.quotechar,
                            escapechar=self.__parameters__.escapechar)
 
+    def export(self, df, file_path: str):
+        df.to_csv(file_path)
+
 
 if __name__ == "__main__":
     test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/" \
