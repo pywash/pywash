@@ -44,17 +44,15 @@ app.layout = html.Div(
         ),
         # Section to store popups in client browser
         # TODO move Dialogs to layout file
-        html.Div(children=[sd_material_ui.Dialog(id='welcome',
-                                                 open=True,
-                                                 modal=False,
-                                                 children=[html.H1('Welcome to PyWash'),
-                                                           html.P('Pywash is a very intersting tool.'),
-                                                           html.P('I don\'t know what to write')],
-                                                 ),
-                           sd_material_ui.Dialog(id='merge-warning',
+        html.Div(children=[sd_material_ui.Dialog(id='pop-up',
                                                  open=False,
                                                  modal=False,
-                                                 children=[html.H1('Not enough datasets selected')],
+                                                 children=None,
+                                                 ),
+                           sd_material_ui.Dialog(id='modal-pop-up',
+                                                 open=False,
+                                                 modal=False,
+                                                 children=None,
                                                  # actions=[html.H3('OK'), html.H3('Nah man')]
                                                  )]),
         html.Div(id='tabs_container', children=[dcc.Tabs(id='tabs')]),
@@ -62,8 +60,17 @@ app.layout = html.Div(
     ])
 
 
+@app.callback(Output('pop-up', 'open'),
+              [Input('pop-up', 'children')])
+def open_popup(text) -> bool:
+    """ Opens popup when it's text is updated """
+    if text is not None:
+        return True
+    return False
+
+
 @app.callback([Output('tabs_container', 'children'),
-               Output('merge-warning', 'open')],
+               Output('pop-up', 'children')],
               [Input('button-merge', 'n_clicks'),
                Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
@@ -74,7 +81,7 @@ def upload_data(n_clicks, contents: list,
                 filenames: list, dates: list, current_tabs: list, merging_datasets: list):
     """ Callback to add/remove datasets from memory and update the tabs """
 
-    def create_tab_interface(tabs: list, warning: bool = False):
+    def create_tab_interface(tabs: list, warning = None):
         """ Creates the tabs object that the main function should return """
         return dcc.Tabs(id='tabs', value='main', children=tabs), warning
 
@@ -117,26 +124,31 @@ def upload_data(n_clicks, contents: list,
         # Test for mergeability, merge and remove left-overs
         if merging_datasets is None or len(merging_datasets) < 2:
             # TODO Develop warning a bit more
-            return create_tab_interface(current_tabs, True)
+            return create_tab_interface(current_tabs, [html.H1('Not enough datasets selected'),
+                                                       html.P('You must select at least 2 datasets to merge')])
         datasets = [UI_data.get_dataset(dataset) for dataset in merging_datasets]
         # Check which datasets can be merged
-        # TODO, Datasets will now double merge
-        for dataset in datasets:
-            for sdf in datasets:
-                if sdf == dataset:
+        for i in range(len(datasets)):
+            for j in range(i, len(datasets)):
+                if datasets[i] == datasets[j]:
                     continue
-                if sdf.is_mergeable(dataset):
+                if datasets[i].is_mergeable(datasets[j]):
                     # Datasets can be merged, confirm and merge
                     # TODO, the ask and confirm part
                     # Merge datasets
-                    merged_df = sdf.merge(dataset)
-                    merged_sdf = SharedDataFrame(name=sdf.name + '+' + dataset.name, df=merged_df)
+                    merged_df = datasets[i].merge(datasets[j])
+                    merged_sdf = SharedDataFrame(name=datasets[i].name + '+' + datasets[j].name, df=merged_df)
                     UI_data.add_dataset(merged_sdf.name, merged_sdf)
                     # Remove datasets from the tabs and add the merged dataset
                     # TODO Remove datasets from UI_data
                     current_tabs.remove(
-                        {'props': {'children': None, 'label': sdf.name, 'value': sdf.name}, 'type': 'Tab',
-                         'namespace': 'dash_core_components'})
+                        {'props': {'children': None,
+                                   'label': datasets[i].name, 'value': datasets[i].name},
+                         'type': 'Tab', 'namespace': 'dash_core_components'})
+                    current_tabs.remove(
+                        {'props': {'children': None,
+                                   'label': datasets[j].name, 'value': datasets[j].name},
+                         'type': 'Tab', 'namespace': 'dash_core_components'})
                     current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
         return create_tab_interface(current_tabs)
 
