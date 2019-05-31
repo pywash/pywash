@@ -23,3 +23,9 @@ class TestDecorators(TestCase):
                 except Exception as e:
                     print([attribute[1] for attribute in sdf.parser.attributes])
                     self.assertTrue(False, 'Arff file ({}) loading error: {}'.format(sdf.name, e))
+
+    def test_arff_export(self):
+        if verbose:
+            print("Testing: test_arff_export")
+        sdf = SharedDataFrame('C:/AAA_School/Assignments/BEP/Datasets/Arff Files/arrhythmia_missing.arff')
+        sdf.export('export_arff.arff')
