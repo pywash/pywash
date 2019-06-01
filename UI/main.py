@@ -196,16 +196,13 @@ def process_input(outlier_submit, normalize_submit, missing_submit, outlier_sett
 
 @app.callback(
     Output('table-dropdown', 'data'),
-    [Input('data-types', 'n_clicks')],
-    [State('datatable', 'derived_virtual_data')])
-def infer_datatypes(datatypes_submit, data):
-    ctx = dash.callback_context
-    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    [Input('datatable', 'data')],
+    [State('table-dropdown', 'derived_virtual_data')])
+def infer_datatypes(data, dtypes):
     df = pd.DataFrame(data)
-    if button_clicked == 'data-types' is not None:
-        inferred_types = discover_type_heuristic(df)
-        types_dict = {df.columns[i]: inferred_types[i] for i in range(0, len(df.columns))}
-        return [types_dict]
+    inferred_types = discover_type_heuristic(df)
+    types_dict = {df.columns[i]: inferred_types[i] for i in range(0, len(df.columns))}
+    return [types_dict]
 
 
 @app.callback(Output('datatable', 'data'),
@@ -306,12 +303,16 @@ def preset_outliers(value):
      State('dropdown-missing', 'options')],
 )
 def add_missing_character(click, new_value, current_options):
-    ctx = dash.callback_context
-    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    try:
+        ctx = dash.callback_context
+        button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    except IndexError:
+        button_clicked = 'None'
 
     if button_clicked == 'add-missing':
         current_options.append({'label': new_value, 'value': new_value})
         return current_options
+    return current_options
 
 
 @app.callback(Output('graph', 'children'),
@@ -324,8 +325,11 @@ def add_missing_character(click, new_value, current_options):
               )
 def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_column):
     ctx = dash.callback_context
-    button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
-    df_ = pd.DataFrame(data).astype(dtypes[0])
+    try:
+        button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+        df_ = pd.DataFrame(data).astype(dtypes[0])
+    except IndexError:
+        button_clicked = 'None'
     if button_clicked == 'boxplot':
         df_ = df_.select_dtypes(include=[np.number])
 
@@ -346,7 +350,7 @@ def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_
             trace_temp = go.Bar(
                 x=np.asarray(df_.columns),
                 y=df_.values[i],
-                name=df_.index[i]
+                name=str(df_.index[i])
             )
             data.append(trace_temp)
 

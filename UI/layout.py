@@ -161,6 +161,19 @@ def layout_bandB(columntypes):
     columntypes = columntypes.transpose()
     pandas_types = ['object', 'float64', 'int64', 'bool', 'category', 'datetime64']
     return html.Div([
+        dcc.Markdown('''###### Data types'''),
+        dash_table.DataTable(
+            id='table-dropdown',
+            data=columntypes.to_dict('records'),
+            columns=[
+                {"name": i, "id": i, 'clearable': False, 'presentation': 'dropdown'} for i in columntypes.columns
+            ],
+            editable=True,
+            column_static_dropdown=[
+                {"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
+                columntypes.columns],
+            style_cell={'textAlign': 'center', "padding": "5px"},
+        ),
         dcc.Markdown('''###### Missing values'''),
         html.Div(id='missing-status'),
         dcc.Dropdown(
@@ -189,18 +202,6 @@ def layout_bandB(columntypes):
         ),
         html.Button('Fix missing values!', id='submit_missing'),
         html.Button('Add Option', id='add-missing'),
-        dcc.Markdown('''###### Data types'''),
-        dash_table.DataTable(
-            id='table-dropdown',
-            data=columntypes.to_dict('records'),
-            columns=[
-                {"name": i, "id": i, 'presentation': 'dropdown'} for i in columntypes.columns
-            ],
-            editable=True,
-            column_static_dropdown=[{"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
-                                    columntypes.columns]
-        ),
-        html.Button('Infer Data Types!', id='data-types'),
     ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
