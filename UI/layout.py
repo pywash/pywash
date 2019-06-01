@@ -204,64 +204,35 @@ def layout_plots():
             id='plot-selection',
             style={'width': "50%"}
         ),
-        html.Button('distribution', id='distribution')
+        html.Button('distribution', id='distribution'),
+        html.Div([], id='graph')
     ])
 
 
 def layout_boxplot(data):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(
-            figure={
-                'data': data,
-                'layout': go.Layout(
-                    xaxis={
-                        'type': 'category',
-                    }
-                )
-            })
-    ])
+    return dcc.Graph(
+        figure={
+            'data': data,
+            'layout': go.Layout(
+                xaxis={
+                    'type': 'category',
+                }
+            )
+        })
 
 
 def layout_distriplot(data):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(
-            figure={
-                'data': data,
-                'layout': go.Layout(
-                    barmode='stack',
-                    xaxis={
-                        'type': 'category',
-                    }
-                )
-            })
-    ])
+    return dcc.Graph(
+        figure={
+            'data': data,
+            'layout': go.Layout(
+                barmode='stack',
+                xaxis={
+                    'type': 'category',
+                }
+            )
+        })
+
 
 def layout_histoplot(data, selected_column):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(figure = ff.create_distplot([data[selected_column]], [selected_column]))
-    ])
-
+    return dcc.Graph(figure=ff.create_distplot([data[selected_column]], [selected_column]))

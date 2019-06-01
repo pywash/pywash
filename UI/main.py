@@ -81,7 +81,7 @@ def upload_data(n_clicks, contents: list,
                 filenames: list, dates: list, current_tabs: list, merging_datasets: list):
     """ Callback to add/remove datasets from memory and update the tabs """
 
-    def create_tab_interface(tabs: list, warning = None):
+    def create_tab_interface(tabs: list, warning=None):
         """ Creates the tabs object that the main function should return """
         return dcc.Tabs(id='tabs', value='main', children=tabs), warning
 
@@ -167,7 +167,7 @@ def render_data(tab):
     Output('memory-output', 'data'),
     [Input('submit_outlier', 'n_clicks'),
      Input('submit_normalize', 'n_clicks'),
-     Input('submit_missing', 'n_clicks'),],
+     Input('submit_missing', 'n_clicks'), ],
     [State('outlier_custom_setting', 'value'),
      State('normalize_selection', 'value'),
      State('missing_setting', 'value'),
@@ -192,6 +192,7 @@ def process_input(outlier_submit, normalize_submit, missing_submit, outlier_sett
     if button_clicked == 'submit_missing' is not None:
         df_updated = handle_missing(df, missing_setting, missing_navalues)
         return df_updated.to_dict("records")
+
 
 @app.callback(
     Output('table-dropdown', 'data'),
@@ -274,6 +275,7 @@ def on_data_set_table(data):
     eligible_features = [{"label": i, "value": i} for i in eligible_features]
     return eligible_features, eligible_features
 
+
 @app.callback(Output('missing-status', 'children'),
               [Input('datatable', 'data')])
 def missing_status(data):
@@ -312,14 +314,15 @@ def add_missing_character(click, new_value, current_options):
         return current_options
 
 
-@app.callback(Output('plotstab', 'children'),
+@app.callback(Output('graph', 'children'),
               [Input('boxplot', 'n_clicks'),
-               Input('distribution', 'n_clicks')],
+               Input('distribution', 'n_clicks'),
+               Input('cat_distribution', 'n_clicks')],
               [State('datatable', 'derived_virtual_data'),
                State('table-dropdown', 'derived_virtual_data'),
                State('plot-selection', 'value')]
               )
-def plots(boxplot_click, distri_click, data, dtypes, selected_column):
+def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_column):
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
     df_ = pd.DataFrame(data).astype(dtypes[0])
@@ -351,7 +354,6 @@ def plots(boxplot_click, distri_click, data, dtypes, selected_column):
 
     if button_clicked == 'distribution':
         return layout_histoplot(df_, selected_column)
-
 
 
 if __name__ == '__main__':
