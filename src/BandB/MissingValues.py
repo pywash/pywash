@@ -95,17 +95,6 @@ def identify_missing_mechanism(df=None):
         print('Missing mechanism is probably missing completely at random')
 
 
-#     tri_lower_no_diag = np.tril(df.isnull().corr(), k=-1)
-#     # if any 2 features highly missing correlated
-#     if (tri_lower_no_diag > 0.6).any() or (tri_lower_no_diag < -0.6).any():
-#         display(HTML('<bold>Missing mechanism is highly possible to be missing at random</bold>'))
-#     elif (tri_lower_no_diag > -0.2).all() and (tri_lower_no_diag < 0.2).all():
-#         display(HTML('<bold>Missing mechanism is highly possible to be missing completely at random</bold>'))
-#     else:
-#         display(HTML('<bold>Missing mechanism is hard to guess</bold>'))
-
-
-
 def missing_preprocess(features, df=None):
     """Drops the redundant information.
     Redundant information is dropped before imputation. Detects and
@@ -155,46 +144,6 @@ def missing_preprocess(features, df=None):
     print(df.columns)
     features_new = df.columns.values
     return df, features_new
-
-
-'''
-def compute_imputation_score(Xy):
-    """Computes score of the imputation by applying simple classifiers.
-    The following simple learners are evaluated:
-    Naive Bayes Learner;
-    Linear Discriminant Learner;
-    One Nearest Neighbor Learner;
-    Decision Node Learner.
-    Parameters
-    ----------
-    Xy : array-like
-        Complete numpy array of the dataset. The training array X has to be imputed
-        already, and the target y is required here and not optional in order to
-        predict the performance of the imputation method.
-    Returns
-    -------
-    imputation_score : float
-        Predicted score of the imputation method.
-    """
-    X = Xy[:, :-1]
-    #     print(X.dtype)
-    y = Xy[:, -1]
-    y = y.astype('int')
-    #     print(y.dtype)
-    scores = []
-    naive_bayes = GaussianNB()
-    decision_node = DecisionTreeClassifier(criterion='entropy', splitter='best', max_depth=1, random_state=0)
-    linear_discriminant_analysis = LinearDiscriminantAnalysis(solver='lsqr', shrinkage='auto')
-    one_nearest_neighbor = KNeighborsClassifier(n_neighbors=1)
-    classifiers = [naive_bayes, decision_node, linear_discriminant_analysis, one_nearest_neighbor]
-    for classifier in classifiers:
-        # compute accuracy score for each simple classifier
-        score = np.mean(cross_val_score(classifier, X, y, cv=5, scoring='accuracy', n_jobs=-1))
-        #         print("Score of {} is {}".format(classifier, score))
-        scores.append(score)
-    imputation_score = np.mean(scores)
-    return imputation_score
-'''
 
 
 def deal_mcar(df):
@@ -356,10 +305,11 @@ def handle_missing(df, setting = 'mar', na_values=['n/a', 'na', '--', '?']):
     Xy_filled : array-like
         Numpy array where missing values have been cleaned.
     """
+    if setting == 'remove':
+        return df.dropna()
     flag = identify_missing(df, na_values)
-    features_new = df.columns
-    Xy_filled = np.asarray(df)
+    df_numeric = df.select_dtypes(include=[np.number])
     if flag:
-        features_new, Xy_filled = clean_missing(df.columns, df, setting)
-    df_filled = pd.DataFrame(Xy_filled, columns=features_new)
-    return df_filled
+        features_new, Xy_filled = clean_missing(df_numeric.columns, df_numeric, setting)
+        df[features_new] = pd.DataFrame(Xy_filled)
+    return df

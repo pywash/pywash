@@ -94,7 +94,7 @@ def DATA_DIV(filename, df):
                           'font-size': 'large',
                           'text-align': 'center'},
             style_filter={'backgroundColor': '#DCDCDC',
-                          'font-size': 'large'}
+                          'font-size': 'large'},
         ),
         html.A(html.Button('Download current data', id='download-button'), id='download-link',
                download="cleandata.csv",
@@ -194,7 +194,8 @@ def layout_bandB(columntypes):
             options=[
                 {'label': 'mcar', 'value': 'mcar'},
                 {'label': 'mar', 'value': 'mar'},
-                {'label': 'mnar', 'value': 'mnar'}
+                {'label': 'mnar', 'value': 'mnar'},
+                {'label': 'remove', 'value': 'remove'}
             ],
             id='missing_setting',
             value='mar',
@@ -215,6 +216,7 @@ def layout_plots():
             style={'width': "50%"}
         ),
         html.Button('distribution', id='distribution'),
+        html.Button('Parallel coordinates', id='par_coords'),
         html.Div([], id='graph')
     ])
 
@@ -228,7 +230,8 @@ def layout_boxplot(data):
                     'type': 'category',
                 }
             )
-        })
+        }
+        ,id='graphic')
 
 
 def layout_distriplot(data):
@@ -241,8 +244,14 @@ def layout_distriplot(data):
                     'type': 'category',
                 }
             )
-        })
+        }, id='graphic')
 
 
 def layout_histoplot(data, selected_column):
-    return dcc.Graph(figure=ff.create_distplot([data[selected_column]], [selected_column]))
+    return dcc.Graph(figure=ff.create_distplot([data], [selected_column]), id='graphic')
+
+def layout_parcoordsplot(data):
+    return dcc.Graph(
+        figure={
+            'data': data,
+        }, id='graphic')

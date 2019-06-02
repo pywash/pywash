@@ -1,6 +1,7 @@
 from src.Parsers.ParserUtil import assign_parser
 from src.Exceptions import *
 from pandas.core.frame import DataFrame
+import numpy as np
 import os
 
 

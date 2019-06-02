@@ -16,9 +16,9 @@ from UI.storage import DataSets
 import numpy as np
 
 UI_data = DataSets()
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, assets_folder='./assets')  # , external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
 
 app.layout = html.Div(
@@ -190,6 +190,7 @@ def process_input(outlier_submit, normalize_submit, missing_submit, outlier_sett
         df_updated = normalize(df, normalize_selection, tuple(int(i) for i in normalize_range.split(',')))
         return df_updated.to_dict("records")
     if button_clicked == 'submit_missing' is not None:
+        df = df.replace(r'^\s*$', np.nan, regex=True)
         df_updated = handle_missing(df, missing_setting, missing_navalues)
         return df_updated.to_dict("records")
 
@@ -226,11 +227,10 @@ def update_columns(data):
 
 
 @app.callback(Output('datatable', 'style_data_conditional'),
-              [Input('datatable', 'data')])
-def update_datatable_styling(columns):
-    if columns is None:
-        raise PreventUpdate
-    return [
+              [Input('datatable', 'derived_virtual_data')])
+def update_datatable_styling(data):
+    df = pd.DataFrame(data)
+    datastyle = [
         {
             'if': {
                 'column_id': 'probability',
@@ -246,8 +246,8 @@ def update_datatable_styling(columns):
             },
             'backgroundColor': '#8b0000',
             'color': 'white',
-        },
-    ]
+        }]
+    return datastyle
 
 
 @app.callback(
@@ -277,6 +277,7 @@ def on_data_set_table(data):
               [Input('datatable', 'data')])
 def missing_status(data):
     df = pd.DataFrame(data)
+    df = df.replace(r'^\s*$', np.nan, regex=True)
     if pd.isnull(df).values.any():
         return html.Div('Status: {}'.format('Missing data detected!'),
                         style={'color': 'red', 'fontSize': 15})
@@ -318,18 +319,27 @@ def add_missing_character(click, new_value, current_options):
 @app.callback(Output('graph', 'children'),
               [Input('boxplot', 'n_clicks'),
                Input('distribution', 'n_clicks'),
-               Input('cat_distribution', 'n_clicks')],
+               Input('cat_distribution', 'n_clicks'),
+               Input('par_coords', 'n_clicks')],
               [State('datatable', 'derived_virtual_data'),
                State('table-dropdown', 'derived_virtual_data'),
                State('plot-selection', 'value')]
               )
-def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_column):
+def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, data, dtypes, selected_column):
     ctx = dash.callback_context
     try:
         button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
-        df_ = pd.DataFrame(data).astype(dtypes[0])
+        df_ = pd.DataFrame(data)
+        try:
+            df_ = df_.astype(dtypes[0], errors='ignore')
+        except ValueError:  # if there are missing values, convert int to float
+            for column, type in dtypes[0].items():
+                if type == "int64":
+                    dtypes[0][column] = "float64"
+            df_ = df_.astype(dtypes[0], errors='ignore')
     except IndexError:
         button_clicked = 'None'
+
     if button_clicked == 'boxplot':
         df_ = df_.select_dtypes(include=[np.number])
 
@@ -337,7 +347,8 @@ def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_
         for i in df_.columns:
             data.append(go.Box(
                 y=df_[i],
-                name=i
+                name=str(i),
+                boxpoints='outliers',
             ))
 
         return layout_boxplot(data)
@@ -357,7 +368,41 @@ def plots(boxplot_click, distri_click, cat_distri_click, data, dtypes, selected_
         return layout_distriplot(data)
 
     if button_clicked == 'distribution':
-        return layout_histoplot(df_, selected_column)
+
+        df_ = df_[selected_column].dropna()
+        return layout_histoplot(df_,selected_column)
+
+    if button_clicked == 'par_coords':
+        df_ = df_.select_dtypes(include=[np.number])
+        data = [go.Parcoords(
+            line=dict(color=df_[str(selected_column)], colorscale='Rainbow', showscale=True),
+            dimensions=[{'label': str(i), 'values': df_[i]} for i in df_.columns]
+        )]
+        return layout_parcoordsplot(data)
+
+
+@app.callback(Output('datatable', 'selected_rows'),
+              [Input('graphic', 'selectedData'),
+               Input('graphic', 'clickData'), ])
+def plots(selected_data, click_data):
+    print(selected_data)
+    print(click_data)
+    try:
+        selected_points = [i['pointNumber'] for i in click_data['points']]
+        return selected_points
+    except TypeError:
+        pass
+    try:
+        selected_points = [i['pointNumber'] for i in selected_data['points']]
+        return selected_points
+    except TypeError:
+        pass
+    try:
+        selected_points = [i['pointNumbers'] for i in selected_data['points']]
+        flat_list = [item for sublist in selected_points for item in sublist]
+        return flat_list
+    except TypeError:
+        pass
 
 
 if __name__ == '__main__':
