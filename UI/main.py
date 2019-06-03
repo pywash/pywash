@@ -1,3 +1,4 @@
+import time
 import urllib
 
 import dash
@@ -220,15 +221,16 @@ def update_sdf(data, current_tab):
     pass
 
 
-@app.callback(Output('datatable', 'columns'),
-              [Input('datatable', 'data')])
-def update_columns(data):
+@app.callback([Output('datatable', 'columns'),
+               Output('table-dropdown', 'columns')],
+              [Input('datatable', 'data')],
+              [State('tabs', 'value')])
+def update_columns(data, current_tab):
     if data is None:
         raise PreventUpdate
-    df = pd.DataFrame(data)
-    return [
-        {"name": i, "id": i, "deletable": True} for i in df.columns
-    ]
+    sdf = UI_data.get_dataset(current_tab)
+    columns = [{"name": str(i), "id": str(i), "deletable": True} for i in sdf.get_dataframe().columns]
+    return columns, columns
 
 
 @app.callback(Output('datatable', 'style_data_conditional'),
@@ -351,7 +353,7 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
         return layout_boxplot(data)
 
     if button_clicked == 'cat_distribution':
-        df_ = df_.select_dtypes(include=['category'])
+        df_ = df_.select_dtypes(include=['category', 'bool'])
         df_ = df_.apply(pd.value_counts)
         data = []
         for i in range(df_.shape[0]):
@@ -399,6 +401,14 @@ def plots(selected_data, click_data):
         return flat_list
     except TypeError:
         pass
+
+
+@app.callback(Output("loading-1", "value"), [Input('boxplot', 'n_clicks'),
+                                             Input('distribution', 'n_clicks'),
+                                             Input('cat_distribution', 'n_clicks'),
+                                             Input('par_coords', 'n_clicks')])
+def loading(click, click2, click3, click4):
+    return time.sleep(1)
 
 
 if __name__ == '__main__':

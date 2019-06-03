@@ -218,7 +218,7 @@ def layout_plots():
         ),
         html.Button('distribution', id='distribution'),
         html.Button('Parallel coordinates', id='par_coords'),
-        html.Div([], id='graph')
+        dcc.Loading(id='loading-1', children=[html.Div([], id='graph')])
     ])
 
 
@@ -232,7 +232,7 @@ def layout_boxplot(data):
                 }
             )
         }
-        ,id='graphic')
+        , id='graphic')
 
 
 def layout_distriplot(data):
@@ -250,6 +250,7 @@ def layout_distriplot(data):
 
 def layout_histoplot(data, selected_column):
     return dcc.Graph(figure=ff.create_distplot([data], [selected_column]), id='graphic')
+
 
 def layout_parcoordsplot(data):
     return dcc.Graph(

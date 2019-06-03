@@ -17,7 +17,7 @@ def infer_feature_type(feature):
     data_type : string
         The data type of the given feature/attribute.
     """
-    data_type = ""
+
     types = ["datetime64", "float64", "int64", "object"]
     weights = [0, 0, 0, 0]  # Weights corresponding to the data types
     feature_len = len(feature)
@@ -84,8 +84,10 @@ def discover_type_heuristic(df):
     result = []
     for column in df.columns:
         # print ("Trying to automatically infer the data type of the",column,"feature...") #For debugging purposes
-        type_inferred = infer_feature_type(df[column])
+        df_ = df[column]
+        df_.dropna(inplace=True)
+        df_.reset_index(drop=True, inplace=True)
+        type_inferred = infer_feature_type(df_)
         result.append(type_inferred)
         # print ("Result:",inferredType) #For debugging purposes
     return result
-
