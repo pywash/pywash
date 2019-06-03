@@ -305,6 +305,7 @@ def handle_missing(df, setting = 'mar', na_values=['n/a', 'na', '--', '?']):
     Xy_filled : array-like
         Numpy array where missing values have been cleaned.
     """
+    df = df.replace(r'^\s*$', np.nan, regex=True)
     if setting == 'remove':
         return df.dropna()
     flag = identify_missing(df, na_values)

@@ -51,6 +51,7 @@ def merge_component(datasets):
 
 def DATA_DIV(filename, df):
     return html.Div([
+        html.Div([], id='dummy'),
         html.Div([
             html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
             html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))

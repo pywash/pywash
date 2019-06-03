@@ -2,7 +2,6 @@ import os
 os.environ['R_USER'] = 's163716'
 from datacleanbot.dataclean import handle_missing
 from sklearn import preprocessing
-import numpy as np
 import pandas as pd
 
 

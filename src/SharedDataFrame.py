@@ -1,14 +1,19 @@
+from src.BandA.Normalization import normalize
+from src.BandA.OutlierDetector import identify_outliers
+from src.BandB.DataTypes import discover_type_heuristic
+from src.BandB.MissingValues import handle_missing
 from src.Parsers.ParserUtil import assign_parser
 from src.Exceptions import *
 from pandas.core.frame import DataFrame
-import numpy as np
-import os
+import pandas as pd
+
 
 
 class SharedDataFrame:
     """ Shared DataFrame
     Main Abstract Data Type to store, process and use the data
     """
+
     def __init__(self, file_path: str = None, contents: str = None, df: DataFrame = None,
                  name: str = None, verbose: bool = False):
         """ Initializes the SharedDataFrame
@@ -42,10 +47,12 @@ class SharedDataFrame:
 
     def _load_data(self):
         self.data = self.parser.parse()
+        self.data = self.infer_data_types()
 
     def set_data(self, df):
         """ Sets an pre-parsed DataFrame as the data of the SharedDataFrame """
         self.data = df
+        self.data = self.infer_data_types()
 
     def get_dataframe(self):
         return self.data
@@ -126,3 +133,41 @@ class SharedDataFrame:
     def merge_into(self, other_sdf):
         """ Merges another SharedDataFrame into the current DataFrame """
         self.data = self.merge(other_sdf)
+
+    # BandB functions #####
+    def missing(self, setting, na_values):
+        self.data = handle_missing(self.data, setting, na_values)
+        return self.data
+
+    def infer_data_types(self, custom=None):
+        if custom is not None:
+            try:
+                self.data = self.data.astype(custom)
+            except ValueError:
+                pass
+        inferred_types = discover_type_heuristic(self.data)
+        types_dict = {self.data.columns[i]: inferred_types[i] for i in range(0, len(self.data.columns))}
+        try:
+            return self.data.astype(types_dict)
+        except ValueError:
+            return self.data
+
+    # BandA functions #####
+    def normalize(self, columns, normalize_range):
+        self.data = normalize(self.data, columns, tuple(int(i) for i in normalize_range.split(',')))
+        return self.data
+
+    def outlier(self, setting):
+        algorithms = ['Isolation Forest', 'Cluster-based Local Outlier Factor', 'Minimum Covariance Determinant (MCD)',
+                      'Principal Component Analysis (PCA)', 'Angle-based Outlier Detector (ABOD)',
+                      'Histogram-base Outlier Detection (HBOS)', 'K Nearest Neighbors (KNN)',
+                      'Local Outlier Factor (LOF)',
+                      'Feature Bagging', 'One-class SVM (OCSVM)']
+        if pd.isnull(self.data).values.any():
+            # TODO fix missing data with missing(features, Xy)?
+            raise ValueError('fix missing data first')
+
+        algorithms = [algorithms[i] for i in setting]
+        df_sorted, df_styled, df_outliers, df_pred, outliers_count = identify_outliers(self.data, self.data.columns,
+                                                                                       algorithms)
+        return df_sorted
