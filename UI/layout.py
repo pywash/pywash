@@ -33,7 +33,7 @@ def layout_main(datasets):
     ])
 
 
-def merge_component(datasets):
+def pref_merge_component(datasets):
     return html.Div([
         html.H5("Dataset merger:"),
         html.Div([
@@ -46,6 +46,39 @@ def merge_component(datasets):
             ),
             html.Button('Submit', id='button-merge')
         ])
+    ])
+
+
+def merge_component(datasets):
+    return html.Div([
+        html.H5('Dataset merger:'),
+        html.Div([
+            html.Div([
+                dcc.Dropdown(id='dropdown-merger-1',
+                             options=[{'label': x, 'value': x} for x in datasets.get_names()],
+                             multi=False,
+                             placeholder='Select a dataset to merge'),
+                dcc.Checklist(id='checklist-merger-1',
+                              options=[],
+                              values=[])
+            ],
+                style={'width': '40%'},
+                className='six columns'
+            ),
+            html.Div([
+                dcc.Dropdown(id='dropdown-merger-2',
+                             options=[{'label': x, 'value': x} for x in datasets.get_names()],
+                             multi=False,
+                             placeholder='Select a dataset to merge'),
+                dcc.Checklist(id='checklist-merger-2',
+                              options=[],
+                              values=[])
+            ],
+                style={'width': '40%'},
+                className='six columns'),
+        ],
+            className='row'),
+        html.Button('Submit', id='button-merge'),
     ])
 
 

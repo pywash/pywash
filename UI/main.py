@@ -20,6 +20,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
+app.title = 'PyWash'
 
 app.layout = html.Div(
     [
@@ -69,6 +70,42 @@ def open_popup(text) -> bool:
     return False
 
 
+@app.callback([Output('checklist-merger-1', 'options')],
+              [Input('dropdown-merger-1', 'value')])
+def update_checkbox(dataset_name):
+    if dataset_name is None:
+        return [[]]
+    dataset: pd.DataFrame = UI_data.get_dataset(dataset_name).get_dataframe()
+    return [[{'label': key, 'value': key} for key in dataset.keys()]]
+
+
+@app.callback([Output('checklist-merger-2', 'options')],
+              [Input('dropdown-merger-2', 'value')])
+def update_checkbox(dataset_name):
+    if dataset_name is None:
+        return [[]]
+    dataset: pd.DataFrame = UI_data.get_dataset(dataset_name).get_dataframe()
+    return [[{'label': key, 'value': key} for key in dataset.keys()]]
+
+
+@app.callback([Output('checklist-merger-1', 'values'),
+               Output('checklist-merger-2', 'values')],
+              [Input('dropdown-merger-1', 'value'),
+               Input('dropdown-merger-2', 'value')])
+def suggest_merge_columns(dataset_name1: str, dataset_name2: str) -> tuple and list:
+    """
+    Highlights columns of the two datasets that are recommended for merging
+    :param dataset_name1:
+    :param dataset_name2:
+    :return:
+    """
+    if dataset_name1 is None or dataset_name2 is None:
+        return [], []
+    dataset1: SharedDataFrame = UI_data.get_dataset(dataset_name1)
+    dataset2 = UI_data.get_dataset(dataset_name2)
+    return dataset1.find_common_column_values(dataset2)
+
+
 @app.callback([Output('tabs_container', 'children'),
                Output('pop-up', 'children')],
               [Input('button-merge', 'n_clicks'),
@@ -76,9 +113,14 @@ def open_popup(text) -> bool:
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified'),
                State('tabs', 'children'),
-               State('dropdown-merging', 'value')])
+               State('dropdown-merger-1', 'value'),  # Name of the first dataset to merge
+               State('dropdown-merger-2', 'value'),  # Name of the second dataset to merge
+               State('checklist-merger-1', 'values'),  # Column names from the first dataset
+               State('checklist-merger-2', 'values')])  # Column names from the second dataset
 def upload_data(n_clicks, contents: list,
-                filenames: list, dates: list, current_tabs: list, merging_datasets: list):
+                filenames: list, dates: list, current_tabs: list,
+                merging_dataset_1: str, merging_dataset_2: str,
+                data_columns_1: list, data_columns_2: list):
     """ Callback to add/remove datasets from memory and update the tabs """
 
     def create_tab_interface(tabs: list, warning = None):
@@ -122,34 +164,31 @@ def upload_data(n_clicks, contents: list,
     elif last_event == 'button-merge':
         # Datasets were submitted to be merged
         # Test for mergeability, merge and remove left-overs
-        if merging_datasets is None or len(merging_datasets) < 2:
+        # TODO Fix this part, I changed the merging process
+        if merging_dataset_1 is None or merging_dataset_2 is None:
             # TODO Develop warning a bit more
             return create_tab_interface(current_tabs, [html.H1('Not enough datasets selected'),
                                                        html.P('You must select at least 2 datasets to merge')])
-        datasets = [UI_data.get_dataset(dataset) for dataset in merging_datasets]
-        # Check which datasets can be merged
-        for i in range(len(datasets)):
-            for j in range(i, len(datasets)):
-                if datasets[i] == datasets[j]:
-                    continue
-                if datasets[i].is_mergeable(datasets[j]):
-                    # Datasets can be merged, confirm and merge
-                    # TODO, the ask and confirm part
-                    # Merge datasets
-                    merged_df = datasets[i].merge(datasets[j])
-                    merged_sdf = SharedDataFrame(name=datasets[i].name + '+' + datasets[j].name, df=merged_df)
-                    UI_data.add_dataset(merged_sdf.name, merged_sdf)
-                    # Remove datasets from the tabs and add the merged dataset
-                    # TODO Remove datasets from UI_data
-                    current_tabs.remove(
-                        {'props': {'children': None,
-                                   'label': datasets[i].name, 'value': datasets[i].name},
-                         'type': 'Tab', 'namespace': 'dash_core_components'})
-                    current_tabs.remove(
-                        {'props': {'children': None,
-                                   'label': datasets[j].name, 'value': datasets[j].name},
-                         'type': 'Tab', 'namespace': 'dash_core_components'})
-                    current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
+
+        dataset1 = UI_data.get_dataset(merging_dataset_1)
+        dataset2 = UI_data.get_dataset(merging_dataset_2)
+        # Datasets can be merged, confirm and merge
+        # TODO, the ask and confirm part
+        # Merge datasets
+        merged_df = dataset1.auto_merge(dataset2)
+        merged_sdf = SharedDataFrame(name=merging_dataset_1 + '+' + merging_dataset_2, df=merged_df)
+        UI_data.add_dataset(merged_sdf.name, merged_sdf)
+        # Remove datasets from the tabs and add the merged dataset
+        # TODO Remove datasets from UI_data
+        current_tabs.remove(
+            {'props': {'children': None,
+                       'label': merging_dataset_1, 'value': merging_dataset_1},
+             'type': 'Tab', 'namespace': 'dash_core_components'})
+        current_tabs.remove(
+            {'props': {'children': None,
+                       'label': merging_dataset_2, 'value': merging_dataset_2},
+             'type': 'Tab', 'namespace': 'dash_core_components'})
+        current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
         return create_tab_interface(current_tabs)
 
 
@@ -355,4 +394,4 @@ def plots(boxplot_click, distri_click, data, dtypes, selected_column):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, use_reloader=False)
