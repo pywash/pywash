@@ -1,13 +1,31 @@
+'''
+MIT License
+
+Copyright (c) [2018] [Ji Zhang]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+'''
+
 import numpy as np
 import pandas as pd
 from fancyimpute import KNN, MatrixFactorization, IterativeImputer
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import cross_val_score
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import Imputer
-import datacleanbot.dataclean as dc
 import os
 import sys
 
+from sklearn.tree import DecisionTreeClassifier
 
-# hide print
+
 class NoStdStreams(object):
     def __init__(self, stdout=None, stderr=None):
         self.devnull = open(os.devnull, 'w')
@@ -79,7 +97,6 @@ def identify_missing_mechanism(df=None):
     df_missing_corr = df2.corr()[
         missing_columns]  # compute correlations between features containing missing values and other features
     print("Missing correlation between features containing missing values and other features")
-    # display(df_missing_corr)
     flag_mar = False
     # test if there is some correlation of a value being missed in feature and the value of any other of the features
     for col in df_missing_corr:
@@ -93,17 +110,6 @@ def identify_missing_mechanism(df=None):
         print('Missing mechanism is probably missing at random')
     else:
         print('Missing mechanism is probably missing completely at random')
-
-
-#     tri_lower_no_diag = np.tril(df.isnull().corr(), k=-1)
-#     # if any 2 features highly missing correlated
-#     if (tri_lower_no_diag > 0.6).any() or (tri_lower_no_diag < -0.6).any():
-#         display(HTML('<bold>Missing mechanism is highly possible to be missing at random</bold>'))
-#     elif (tri_lower_no_diag > -0.2).all() and (tri_lower_no_diag < 0.2).all():
-#         display(HTML('<bold>Missing mechanism is highly possible to be missing completely at random</bold>'))
-#     else:
-#         display(HTML('<bold>Missing mechanism is hard to guess</bold>'))
-
 
 
 def missing_preprocess(features, df=None):
@@ -157,7 +163,6 @@ def missing_preprocess(features, df=None):
     return df, features_new
 
 
-'''
 def compute_imputation_score(Xy):
     """Computes score of the imputation by applying simple classifiers.
     The following simple learners are evaluated:
@@ -165,8 +170,10 @@ def compute_imputation_score(Xy):
     Linear Discriminant Learner;
     One Nearest Neighbor Learner;
     Decision Node Learner.
+
     Parameters
     ----------
+
     Xy : array-like
         Complete numpy array of the dataset. The training array X has to be imputed
         already, and the target y is required here and not optional in order to
@@ -181,6 +188,7 @@ def compute_imputation_score(Xy):
     y = Xy[:, -1]
     y = y.astype('int')
     #     print(y.dtype)
+
     scores = []
     naive_bayes = GaussianNB()
     decision_node = DecisionTreeClassifier(criterion='entropy', splitter='best', max_depth=1, random_state=0)
@@ -192,9 +200,9 @@ def compute_imputation_score(Xy):
         score = np.mean(cross_val_score(classifier, X, y, cv=5, scoring='accuracy', n_jobs=-1))
         #         print("Score of {} is {}".format(classifier, score))
         scores.append(score)
+
     imputation_score = np.mean(scores)
     return imputation_score
-'''
 
 
 def deal_mcar(df):
@@ -215,26 +223,26 @@ def deal_mcar(df):
         Xy_incomplete = df.values
         # mean
         Xy_filled_mean = Imputer(missing_values=np.nan, strategy='mean').fit_transform(Xy_incomplete)
-        score_mean = dc.compute_imputation_score(Xy_filled_mean)
+        score_mean = compute_imputation_score(Xy_filled_mean)
         print("Imputation score of mean is {}".format(score_mean))
         # mode
         Xy_filled_mode = Imputer(missing_values=np.nan, strategy='most_frequent').fit_transform(Xy_incomplete)
-        score_mode = dc.compute_imputation_score(Xy_filled_mode)
+        score_mode = compute_imputation_score(Xy_filled_mode)
         print("Imputation score of mode is {}".format(score_mode))
         # knn
         with NoStdStreams():
             Xy_filled_knn = KNN().fit_transform(Xy_incomplete);
-        score_knn = dc.compute_imputation_score(Xy_filled_knn)
+        score_knn = compute_imputation_score(Xy_filled_knn)
         print("Imputation score of knn is {}".format(score_knn))
         # matrix factorization
         with NoStdStreams():
             Xy_filled_mf = MatrixFactorization().fit_transform(Xy_incomplete);
-        score_mf = dc.compute_imputation_score(Xy_filled_mf)
+        score_mf = compute_imputation_score(Xy_filled_mf)
         print("Imputation score of matrix factorization is {}".format(score_knn))
         # multiple imputation
         with NoStdStreams():
             Xy_filled_ii = IterativeImputer().fit_transform(Xy_incomplete)
-        score_ii = dc.compute_imputation_score(Xy_filled_ii)
+        score_ii = compute_imputation_score(Xy_filled_ii)
         print("Imputation score of multiple imputation is {}".format(score_ii))
 
         score_dict = {'mean': score_mean, 'mode': score_mode, 'knn': score_knn,
@@ -252,17 +260,17 @@ def deal_mar(df):
     # knn
     with NoStdStreams():
         Xy_filled_knn = KNN().fit_transform(Xy_incomplete);
-    score_knn = dc.compute_imputation_score(Xy_filled_knn)
+    score_knn = compute_imputation_score(Xy_filled_knn)
     print("Imputation score of knn is {}".format(score_knn))
     # matrix factorization
     with NoStdStreams():
         Xy_filled_mf = MatrixFactorization().fit_transform(Xy_incomplete);
-    score_mf = dc.compute_imputation_score(Xy_filled_mf)
+    score_mf = compute_imputation_score(Xy_filled_mf)
     print("Imputation score of matrix factorization is {}".format(score_knn))
     # multiple imputation
     with NoStdStreams():
         Xy_filled_ii = IterativeImputer().fit_transform(Xy_incomplete)
-    score_ii = dc.compute_imputation_score(Xy_filled_ii)
+    score_ii = compute_imputation_score(Xy_filled_ii)
     print("Imputation score of multiple imputation is {}".format(score_ii))
 
     score_dict = {'knn': score_knn,
@@ -304,7 +312,6 @@ def clean_missing(df, features, setting):
         print("Default MAR")
         recommend = deal_mar(df_preprocessed)
 
-
     if recommend == 'mean':
         print("Applying mean imputation ...")
         Xy_filled = Imputer(missing_values=np.nan, strategy='mean').fit_transform(df_preprocessed.values)
@@ -333,7 +340,7 @@ def clean_missing(df, features, setting):
     return features_new, Xy_filled
 
 
-def handle_missing(df, setting = 'mar', na_values=['n/a', 'na', '--', '?']):
+def handle_missing(df, setting='mar', na_values=['n/a', 'na', '--', '?']):
     """Handle missing values.
     Recommend the approprate approach to the user given the missing mechanism
     of the dataset. The user can choose to adopt the recommended approach or take
@@ -356,10 +363,12 @@ def handle_missing(df, setting = 'mar', na_values=['n/a', 'na', '--', '?']):
     Xy_filled : array-like
         Numpy array where missing values have been cleaned.
     """
+    df = df.replace(r'^\s*$', np.nan, regex=True)
+    if setting == 'remove':
+        return df.dropna()
     flag = identify_missing(df, na_values)
-    features_new = df.columns
-    Xy_filled = np.asarray(df)
+    df_numeric = df.select_dtypes(include=[np.number])
     if flag:
-        features_new, Xy_filled = clean_missing(df.columns, df, setting)
-    df_filled = pd.DataFrame(Xy_filled, columns=features_new)
-    return df_filled
+        features_new, Xy_filled = clean_missing(df_numeric.columns, df_numeric, setting)
+        df[features_new] = pd.DataFrame(Xy_filled)
+    return df

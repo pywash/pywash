@@ -4,7 +4,7 @@ import dash_table
 import plotly.graph_objs as go
 import plotly.figure_factory as ff
 import pandas as pd
-
+import math
 from UI.main import app
 
 
@@ -84,6 +84,7 @@ def merge_component(datasets):
 
 def DATA_DIV(filename, df):
     return html.Div([
+        html.Div([], id='dummy'),
         html.Div([
             html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
             html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))
@@ -119,6 +120,15 @@ def DATA_DIV(filename, df):
                 "page_size": 50,
             },
             navigation="page",
+            style_cell={'textAlign': 'right', "padding": "5px"},
+            style_table={'overflowX': 'auto'},
+            style_cell_conditional=[{'if': {'row_index': 'odd'},
+                                     'backgroundColor': 'rgb(248, 248, 248)'}],
+            style_header={'backgroundColor': '#C2DFFF',
+                          'font-size': 'large',
+                          'text-align': 'center'},
+            style_filter={'backgroundColor': '#DCDCDC',
+                          'font-size': 'large'},
         ),
         html.A(html.Button('Download current data', id='download-button'), id='download-link',
                download="cleandata.csv",
@@ -161,20 +171,29 @@ def layout_bandA():
             style={'width': "50%"}
         ),
         html.Button('Detect outliers!', id='submit_outlier'),
-        dcc.Markdown('''###### Normalization'''),
+        dcc.Markdown('''###### Scaling'''),
+        dcc.RadioItems(
+            options=[
+                {'label': 'normalize', 'value': 'normalize'},
+                {'label': 'standardize', 'value': 'standardize'},
+            ],
+            id='scale_setting',
+            value='normalize',
+            labelStyle={'display': 'inline-block'}
+        ),
         dcc.Dropdown(
             multi=True,
-            placeholder="Select columns to normalize",
-            id='normalize_selection',
+            placeholder="Select columns to scale",
+            id='scale_selection',
             style={'width': "50%"}
         ),
         dcc.Input(
-            id='normalize_range',
+            id='scale_range',
             placeholder='Range (i.e. "0,1")',
             type='text',
             value=''
         ),
-        html.Button('Normalize!', id='submit_normalize'),
+        html.Button('Scale!', id='submit_scale'),
     ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
@@ -185,6 +204,19 @@ def layout_bandB(columntypes):
     columntypes = columntypes.transpose()
     pandas_types = ['object', 'float64', 'int64', 'bool', 'category', 'datetime64']
     return html.Div([
+        dcc.Markdown('''###### Data types'''),
+        dash_table.DataTable(
+            id='table-dropdown',
+            data=columntypes.to_dict('records'),
+            columns=[
+                {"name": i, "id": i, 'clearable': False, 'presentation': 'dropdown'} for i in columntypes.columns
+            ],
+            editable=True,
+            column_static_dropdown=[
+                {"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
+                columntypes.columns],
+            style_cell={'textAlign': 'center', "padding": "5px"},
+        ),
         dcc.Markdown('''###### Missing values'''),
         html.Div(id='missing-status'),
         dcc.Dropdown(
@@ -200,32 +232,21 @@ def layout_bandB(columntypes):
             style={'width': "50%"}
 
         ),
+        html.Button('Add Option', id='add-missing'),
         dcc.Input(id='input-missing', value='', placeholder="Add extra character"),
         dcc.RadioItems(
             options=[
                 {'label': 'mcar', 'value': 'mcar'},
                 {'label': 'mar', 'value': 'mar'},
-                {'label': 'mnar', 'value': 'mnar'}
+                {'label': 'mnar', 'value': 'mnar'},
+                {'label': 'remove', 'value': 'remove'}
             ],
             id='missing_setting',
             value='mar',
             labelStyle={'display': 'inline-block'}
         ),
         html.Button('Fix missing values!', id='submit_missing'),
-        html.Button('Add Option', id='add-missing'),
-        dcc.Markdown('''###### Data types'''),
-        dash_table.DataTable(
-            id='table-dropdown',
-            data=columntypes.to_dict('records'),
-            columns=[
-                {"name": i, "id": i, 'presentation': 'dropdown'} for i in columntypes.columns
-            ],
-            editable=True,
-            column_static_dropdown=[{"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
-                                    columntypes.columns]
-        ),
-        html.Button('Infer Data Types!', id='data-types'),
-    ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
+    ], style={'marginBottom': 10, 'marginTop': 10})
 
 
 def layout_plots():
@@ -237,64 +258,44 @@ def layout_plots():
             id='plot-selection',
             style={'width': "50%"}
         ),
-        html.Button('distribution', id='distribution')
+        html.Button('distribution', id='distribution'),
+        html.Button('Parallel coordinates', id='par_coords'),
+        dcc.Loading(id='loading-1', children=[html.Div([], id='graph')]),
     ])
 
 
 def layout_boxplot(data):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(
-            figure={
-                'data': data,
-                'layout': go.Layout(
-                    xaxis={
-                        'type': 'category',
-                    }
-                )
-            })
-    ])
+    return dcc.Graph(
+        figure={
+            'data': data,
+            'layout': go.Layout(
+                xaxis={
+                    'type': 'category',
+                }
+            )
+        }
+        , id='graphic')
 
 
 def layout_distriplot(data):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(
-            figure={
-                'data': data,
-                'layout': go.Layout(
-                    barmode='stack',
-                    xaxis={
-                        'type': 'category',
-                    }
-                )
-            })
-    ])
+    return dcc.Graph(
+        figure={
+            'data': data,
+            'layout': go.Layout(
+                barmode='stack',
+                xaxis={
+                    'type': 'category',
+                }
+            )
+        }, id='graphic')
+
 
 def layout_histoplot(data, selected_column):
-    return html.Div([
-        html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
-        dcc.Dropdown(
-            placeholder="Select columns to plot",
-            id='plot-selection',
-            style={'width': "50%"}
-        ),
-        html.Button('distribution', id='distribution'),
-        dcc.Graph(figure = ff.create_distplot([data[selected_column]], [selected_column]))
-    ])
+    return dcc.Graph(figure=ff.create_distplot([data], [selected_column], bin_size=[1 + 3.322 * math.log(len(data))]), id='graphic')
 
+
+def layout_parcoordsplot(data):
+    return dcc.Graph(
+        figure={
+            'data': data,
+        }, id='graphic')
