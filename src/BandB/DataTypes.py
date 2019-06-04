@@ -1,3 +1,17 @@
+'''
+MIT License
+
+Copyright (c) [2018] [Ji Zhang]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+'''
+
 import random
 import pandas as pd
 import numpy as np
@@ -5,9 +19,9 @@ import numpy as np
 
 def infer_feature_type(feature):
     """Infer data types for the given feature using simple logic.
-    Possible data types to infer: boolean, date, float, integer, string
+    Possible data types to infer: boolean, category, date, float, integer
     Feature that is not either a boolean, a date, a float or an integer,
-    is classified as a string.
+    is classified as an object.
     Parameters
     ----------
     feature : array-like
@@ -38,10 +52,10 @@ def infer_feature_type(feature):
         for i in indices:
             try:
                 if (len(feature[i]) <= 10
-                        and (((feature[i][2:3] == '-' or feature[i][2:3] == '/')
-                              and (feature[i][5:6] == '-' or feature[i][5:6] == '/'))
-                             or ((feature[i][4:5] == '-' or feature[i][4:5] == '/')
-                                 and (feature[i][7:8] == '-' or feature[i][7:8] == '/')))):
+                    and (((feature[i][2:3] == '-' or feature[i][2:3] == '/')
+                          and (feature[i][5:6] == '-' or feature[i][5:6] == '/'))
+                         or ((feature[i][4:5] == '-' or feature[i][4:5] == '/')
+                             and (feature[i][7:8] == '-' or feature[i][7:8] == '/')))):
                     weights[0] += 1  # Date
                 else:
                     weights[3] += 1  # Object
@@ -72,22 +86,19 @@ def discover_type_heuristic(df):
     """Infer data types for each feature using simple logic
     Parameters
     ----------
-    data : numpy array or dataframe
-        Numeric data needs to be 64 bit.
+    data : dataframe
+
     Returns
     -------
     result : list
         List of data types.
     """
-    #     df = pd.DataFrame(data)
-    #     print(df)
+
     result = []
     for column in df.columns:
-        # print ("Trying to automatically infer the data type of the",column,"feature...") #For debugging purposes
         df_ = df[column]
         df_.dropna(inplace=True)
         df_.reset_index(drop=True, inplace=True)
         type_inferred = infer_feature_type(df_)
         result.append(type_inferred)
-        # print ("Result:",inferredType) #For debugging purposes
     return result

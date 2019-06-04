@@ -8,7 +8,6 @@ from pandas.core.frame import DataFrame
 import pandas as pd
 
 
-
 class SharedDataFrame:
     """ Shared DataFrame
     Main Abstract Data Type to store, process and use the data
@@ -65,7 +64,7 @@ class SharedDataFrame:
 
     def update_dtypes(self, dtypes):
         try:
-            self.data =         self.data.astype(dtypes)
+            self.data = self.data.astype(dtypes)
         except ValueError:
             print('failed updating dtypes')
             pass
@@ -161,7 +160,7 @@ class SharedDataFrame:
             return self.data
 
     # BandA functions #####
-    def scale(self, columns, setting, scale_range=(0,1)):
+    def scale(self, columns, setting, scale_range=(0, 1)):
         self.data = normalize(self.data, columns, setting, tuple(int(i) for i in scale_range.split(',')))
         return self.data
 
@@ -176,6 +175,5 @@ class SharedDataFrame:
             raise ValueError('fix missing data first')
 
         algorithms = [algorithms[i] for i in setting]
-        df_sorted, df_styled, df_outliers, df_pred, outliers_count = identify_outliers(self.data, self.data.columns,
-                                                                                       algorithms)
+        df_sorted, df_styled = identify_outliers(self.data, self.data.columns, algorithms)
         return df_sorted

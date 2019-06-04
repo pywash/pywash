@@ -5,7 +5,7 @@ import pandas as pd
 def normalize(df, selection, setting, range=(0, 1)):
     """Normalizes the data.
 
-    The user decides which futures are normalized and in what range.
+    The user decides which futures are scaled and in what range.
 
     Parameters
     ----------
@@ -16,6 +16,9 @@ def normalize(df, selection, setting, range=(0, 1)):
     selection : list
         List of columns to be normalized.
 
+    setting : string
+        'normalize' or 'standardize'
+
     feature_range : default=(0, 1)
         Desired range of transformed data.
 
@@ -23,7 +26,7 @@ def normalize(df, selection, setting, range=(0, 1)):
     -------
 
     df : array-like
-        Original data where desired columns have been normalized.
+        Original data where desired columns have been scaled.
     """
 
     if pd.isnull(df).values.any():
