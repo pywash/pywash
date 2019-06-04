@@ -1,3 +1,4 @@
+import time
 import urllib
 
 import dash
@@ -161,25 +162,28 @@ def render_data(tab):
 @app.callback(
     Output('memory-output', 'data'),
     [Input('submit_outlier', 'n_clicks'),
-     Input('submit_normalize', 'n_clicks'),
-     Input('submit_missing', 'n_clicks'), ],
+     Input('submit_scale', 'n_clicks'),
+     Input('submit_missing', 'n_clicks')],
     [State('outlier_custom_setting', 'value'),
-     State('normalize_selection', 'value'),
+     State('scale_selection', 'value'),
      State('missing_setting', 'value'),
      State('dropdown-missing', 'value'),
-     State('normalize_range', 'value'),
-     State('tabs', 'value')
+     State('scale_range', 'value'),
+     State('scale_setting', 'value'),
+     State('tabs', 'value'),
      ])
-def process_input(outlier_submit, normalize_submit, missing_submit, outlier_setting,
-                  normalize_selection, missing_setting, missing_navalues, normalize_range, current_tab):
+def process_input(outlier_submit, scale_submit, missing_submit, outlier_setting,
+                  scale_selection, missing_setting, missing_navalues, scale_range, scale_setting,
+                  current_tab):
     sdf = UI_data.get_dataset(current_tab)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    print(button_clicked)
     if button_clicked == 'submit_outlier':
         return sdf.outlier(outlier_setting).to_dict("records")
-    if button_clicked == 'submit_normalize' and normalize_range is not None and normalize_selection is not None:
-        return sdf.normalize(normalize_selection, normalize_range).to_dict("records")
-    if button_clicked == 'submit_missing' is not None:
+    if button_clicked == 'submit_scale' and scale_range is not None and scale_selection is not None:
+        return sdf.scale(scale_selection, scale_setting, scale_range).to_dict("records")
+    if button_clicked == 'submit_missing':
         return sdf.missing(missing_setting, missing_navalues).to_dict("records")
 
 
@@ -204,7 +208,6 @@ def infer_datatypes(dtypes, updated_data, current_tab):
     return [sdf.get_dtypes()]
 
 
-
 @app.callback(Output('datatable', 'data'),
               [Input('memory-output', 'data')])
 def update_datatable(data):
@@ -226,7 +229,7 @@ def update_sdf(data, current_tab):
 
 
 @app.callback([Output('datatable', 'columns'),
-              Output('table-dropdown', 'columns')],
+               Output('table-dropdown', 'columns')],
               [Input('datatable', 'data')])
 def update_columns(data):
     if data is None:
@@ -234,7 +237,7 @@ def update_columns(data):
     df = pd.DataFrame(data)
     columns = [{"name": i, "id": i, "deletable": True, } for i in df.columns]
     columns_dtypes = [{"name": i, "id": i, 'clearable': False, 'presentation': 'dropdown'} for i in df.columns]
-    return columns, columns_dtypes  
+    return columns, columns_dtypes
 
 
 @app.callback(Output('datatable', 'style_data_conditional'),
@@ -271,7 +274,7 @@ def update_download_link(data, n_clicks):
                urllib.parse.quote(df_download.to_csv(index=False, encoding='utf-8'))
 
 
-@app.callback([Output('normalize_selection', 'options'),
+@app.callback([Output('scale_selection', 'options'),
                Output('plot-selection', 'options')],
               [Input('datatable', 'columns')],
               [State('tabs', 'value')])
@@ -279,9 +282,11 @@ def on_data_set_table(data, current_tab):
     if data is None:
         raise PreventUpdate
     sdf = UI_data.get_dataset(current_tab)
-    eligible_features = sdf.get_dataframe().select_dtypes(include=[np.number]).columns.tolist()
+    eligible_features_scaling = sdf.get_dataframe().select_dtypes(include=[np.number]).columns.tolist()
+    eligible_features_scaling = [{"label": i, "value": i} for i in eligible_features_scaling]
+    eligible_features = sdf.get_dataframe().select_dtypes(include=[np.number, 'bool', 'category']).columns.tolist()
     eligible_features = [{"label": i, "value": i} for i in eligible_features]
-    return eligible_features, eligible_features
+    return eligible_features_scaling, eligible_features
 
 
 @app.callback(Output('missing-status', 'children'),
@@ -356,8 +361,15 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
 
         return layout_boxplot(data)
 
+    if button_clicked == 'distribution':
+        df_dropped = df_[selected_column].dropna()
+        try:
+            return layout_histoplot(df_dropped, selected_column)
+        except TypeError:
+            button_clicked = 'cat_distribution'
+
     if button_clicked == 'cat_distribution':
-        df_ = df_.select_dtypes(include=['category'])
+        df_ = df_.select_dtypes(include=['category', 'bool'])
         try:
             df_ = df_.apply(pd.value_counts)
         except TypeError:
@@ -374,37 +386,47 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
 
         return layout_distriplot(data)
 
-    if button_clicked == 'distribution':
-        df_ = df_[selected_column].dropna()
-        return layout_histoplot(df_, selected_column)
-
     if button_clicked == 'par_coords':
-        df_ = df_.select_dtypes(include=[np.number])
+        df_numeric = df_.select_dtypes(include=[np.number])
+        df_cat = df_.select_dtypes(include=['category', 'bool'])
+
+        dimension = []
+        dimension += [{'label': str(i), 'values': df_numeric[i]} for i in df_numeric.columns]
+        dimension += [
+            {'label': str(i), 'tickvals': list(range(len(df_cat[i].unique()))),
+             'ticktext': list(df_cat[i].cat.categories),
+             'values': df_cat[i].cat.codes} for i in df_cat.columns]
+
+        if selected_column in df_cat.columns:
+            color = df_cat[str(selected_column)].cat.codes
+            colorscale = 'Jet'
+        else:
+            color = df_[str(selected_column)]
+            colorscale = 'Rainbow'
+
         data = [go.Parcoords(
-            line=dict(color=df_[str(selected_column)], colorscale='Rainbow', showscale=True),
-            dimensions=[{'label': str(i), 'values': df_[i]} for i in df_.columns]
+            line=dict(color=color, colorscale=colorscale, showscale=True),
+            dimensions=dimension
         )]
         return layout_parcoordsplot(data)
 
 
 @app.callback(Output('datatable', 'selected_rows'),
               [Input('graphic', 'selectedData'),
-               Input('graphic', 'clickData'), ])
-def plots(selected_data, click_data):
-    print(selected_data)
-    print(click_data)
+               Input('graphic', 'clickData')], )
+def selection(selected_points, click_data):
     try:
         selected_points = [i['pointNumber'] for i in click_data['points']]
         return selected_points
     except TypeError:
         pass
     try:
-        selected_points = [i['pointNumber'] for i in selected_data['points']]
+        selected_points = [i['pointNumber'] for i in selected_points['points']]
         return selected_points
     except TypeError:
         pass
     try:
-        selected_points = [i['pointNumbers'] for i in selected_data['points']]
+        selected_points = [i['pointNumbers'] for i in selected_points['points']]
         flat_list = [item for sublist in selected_points for item in sublist]
         return flat_list
     except TypeError:

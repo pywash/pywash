@@ -4,7 +4,7 @@ import dash_table
 import plotly.graph_objs as go
 import plotly.figure_factory as ff
 import pandas as pd
-
+import math
 from UI.main import app
 
 
@@ -88,7 +88,7 @@ def DATA_DIV(filename, df):
             },
             navigation="page",
             style_cell={'textAlign': 'right', "padding": "5px"},
-            style_table={'overflowX': 'scroll'},
+            style_table={'overflowX': 'auto'},
             style_cell_conditional=[{'if': {'row_index': 'odd'},
                                      'backgroundColor': 'rgb(248, 248, 248)'}],
             style_header={'backgroundColor': '#C2DFFF',
@@ -138,20 +138,29 @@ def layout_bandA():
             style={'width': "50%"}
         ),
         html.Button('Detect outliers!', id='submit_outlier'),
-        dcc.Markdown('''###### Normalization'''),
+        dcc.Markdown('''###### Scaling'''),
+        dcc.RadioItems(
+            options=[
+                {'label': 'normalize', 'value': 'normalize'},
+                {'label': 'standardize', 'value': 'standardize'},
+            ],
+            id='scale_setting',
+            value='normalize',
+            labelStyle={'display': 'inline-block'}
+        ),
         dcc.Dropdown(
             multi=True,
-            placeholder="Select columns to normalize",
-            id='normalize_selection',
+            placeholder="Select columns to scale",
+            id='scale_selection',
             style={'width': "50%"}
         ),
         dcc.Input(
-            id='normalize_range',
+            id='scale_range',
             placeholder='Range (i.e. "0,1")',
             type='text',
             value=''
         ),
-        html.Button('Normalize!', id='submit_normalize'),
+        html.Button('Scale!', id='submit_scale'),
     ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
 
 
@@ -218,7 +227,7 @@ def layout_plots():
         ),
         html.Button('distribution', id='distribution'),
         html.Button('Parallel coordinates', id='par_coords'),
-        dcc.Loading(id='loading-1', children=[html.Div([], id='graph')])
+        dcc.Loading(id='loading-1', children=[html.Div([], id='graph')]),
     ])
 
 
@@ -249,7 +258,7 @@ def layout_distriplot(data):
 
 
 def layout_histoplot(data, selected_column):
-    return dcc.Graph(figure=ff.create_distplot([data], [selected_column]), id='graphic')
+    return dcc.Graph(figure=ff.create_distplot([data], [selected_column], bin_size=[1 + 3.322 * math.log(len(data))]), id='graphic')
 
 
 def layout_parcoordsplot(data):

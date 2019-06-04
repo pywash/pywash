@@ -54,6 +54,9 @@ class SharedDataFrame:
         self.data = df
         self.data = self.infer_data_types()
 
+    def remove(self, indices):
+        self.data = self.data.drop(indices)
+
     def get_dataframe(self):
         return self.data
 
@@ -158,8 +161,8 @@ class SharedDataFrame:
             return self.data
 
     # BandA functions #####
-    def normalize(self, columns, normalize_range):
-        self.data = normalize(self.data, columns, tuple(int(i) for i in normalize_range.split(',')))
+    def scale(self, columns, setting, scale_range=(0,1)):
+        self.data = normalize(self.data, columns, setting, tuple(int(i) for i in scale_range.split(',')))
         return self.data
 
     def outlier(self, setting):

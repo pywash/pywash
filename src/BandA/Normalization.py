@@ -1,11 +1,8 @@
-import os
-os.environ['R_USER'] = 's163716'
-from datacleanbot.dataclean import handle_missing
 from sklearn import preprocessing
 import pandas as pd
 
 
-def normalize(df, selection, range=(0, 1)):
+def normalize(df, selection, setting, range=(0, 1)):
     """Normalizes the data.
 
     The user decides which futures are normalized and in what range.
@@ -32,8 +29,11 @@ def normalize(df, selection, range=(0, 1)):
     if pd.isnull(df).values.any():
         # TODO implement handle_missing for dash
         print("Missing values detected! Please clean missing values first!")
-        features, Xy = handle_missing(df.columns, df.values)
 
-    df[selection] = pd.DataFrame(preprocessing.minmax_scale(df[selection], feature_range=range))
+    if setting == 'normalize':
+        df[selection] = pd.DataFrame(preprocessing.minmax_scale(df[selection], feature_range=range))
+    if setting == 'standardize':
+        scaler = preprocessing.StandardScaler()
+        df[selection] = pd.DataFrame(scaler.fit_transform(df[selection]))
 
     return df
