@@ -57,6 +57,16 @@ class SharedDataFrame:
     def get_dataframe(self):
         return self.data
 
+    def get_dtypes(self):
+        return self.data.dtypes.apply(lambda x: x.name).to_dict()
+
+    def update_dtypes(self, dtypes):
+        try:
+            self.data =         self.data.astype(dtypes)
+        except ValueError:
+            print('failed updating dtypes')
+            pass
+
     @property
     def name(self):
         return self._name
@@ -139,12 +149,7 @@ class SharedDataFrame:
         self.data = handle_missing(self.data, setting, na_values)
         return self.data
 
-    def infer_data_types(self, custom=None):
-        if custom is not None:
-            try:
-                self.data = self.data.astype(custom)
-            except ValueError:
-                pass
+    def infer_data_types(self):
         inferred_types = discover_type_heuristic(self.data)
         types_dict = {self.data.columns[i]: inferred_types[i] for i in range(0, len(self.data.columns))}
         try:

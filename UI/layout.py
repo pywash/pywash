@@ -190,6 +190,7 @@ def layout_bandB(columntypes):
             style={'width': "50%"}
 
         ),
+        html.Button('Add Option', id='add-missing'),
         dcc.Input(id='input-missing', value='', placeholder="Add extra character"),
         dcc.RadioItems(
             options=[
@@ -203,8 +204,7 @@ def layout_bandB(columntypes):
             labelStyle={'display': 'inline-block'}
         ),
         html.Button('Fix missing values!', id='submit_missing'),
-        html.Button('Add Option', id='add-missing'),
-    ], style={'width': "50%", 'marginBottom': 10, 'marginTop': 10})
+    ], style={'marginBottom': 10, 'marginTop': 10})
 
 
 def layout_plots():

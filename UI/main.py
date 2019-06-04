@@ -1,4 +1,3 @@
-import time
 import urllib
 
 import dash
@@ -186,19 +185,24 @@ def process_input(outlier_submit, normalize_submit, missing_submit, outlier_sett
 
 @app.callback(
     Output('table-dropdown', 'data'),
-    [Input('table-dropdown', 'derived_virtual_data')],
+    [Input('table-dropdown', 'derived_virtual_data'),
+     Input('datatable', 'data')],
     [State('tabs', 'value')])
-def infer_datatypes(dtypes, current_tab):
+def infer_datatypes(dtypes, updated_data, current_tab):
     sdf = UI_data.get_dataset(current_tab)
-    df = sdf.get_dataframe()
-    if df.empty:
+    current_dtypes = sdf.get_dtypes()
+    if dtypes is None or dtypes == [current_dtypes]:
         raise PreventUpdate
-    try:
-        sdf.infer_data_types(dtypes[0])
-        raise PreventUpdate
-    except (IndexError, TypeError):
-        types_dict = df.dtypes.apply(lambda x: x.name).to_dict()
-    return [types_dict]
+    dtypes = dtypes[0]
+    ctx = dash.callback_context
+    last_callback = ctx.triggered[0]['prop_id'].split('.')[0]
+    if last_callback == 'datatable':
+        return [current_dtypes]
+    if len(dtypes) != len(current_dtypes):
+        dtypes = {k: dtypes[k] for k in dtypes.keys() & current_dtypes.keys()}
+    sdf.update_dtypes(dtypes)
+    return [sdf.get_dtypes()]
+
 
 
 @app.callback(Output('datatable', 'data'),
@@ -222,15 +226,15 @@ def update_sdf(data, current_tab):
 
 
 @app.callback([Output('datatable', 'columns'),
-               Output('table-dropdown', 'columns')],
-              [Input('datatable', 'data')],
-              [State('tabs', 'value')])
-def update_columns(data, current_tab):
+              Output('table-dropdown', 'columns')],
+              [Input('datatable', 'data')])
+def update_columns(data):
     if data is None:
         raise PreventUpdate
-    sdf = UI_data.get_dataset(current_tab)
-    columns = [{"name": str(i), "id": str(i), "deletable": True} for i in sdf.get_dataframe().columns]
-    return columns, columns
+    df = pd.DataFrame(data)
+    columns = [{"name": i, "id": i, "deletable": True, } for i in df.columns]
+    columns_dtypes = [{"name": i, "id": i, 'clearable': False, 'presentation': 'dropdown'} for i in df.columns]
+    return columns, columns_dtypes  
 
 
 @app.callback(Output('datatable', 'style_data_conditional'),
@@ -269,7 +273,7 @@ def update_download_link(data, n_clicks):
 
 @app.callback([Output('normalize_selection', 'options'),
                Output('plot-selection', 'options')],
-              [Input('datatable', 'data')],
+              [Input('datatable', 'columns')],
               [State('tabs', 'value')])
 def on_data_set_table(data, current_tab):
     if data is None:
@@ -353,8 +357,12 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
         return layout_boxplot(data)
 
     if button_clicked == 'cat_distribution':
-        df_ = df_.select_dtypes(include=['category', 'bool'])
-        df_ = df_.apply(pd.value_counts)
+        df_ = df_.select_dtypes(include=['category'])
+        try:
+            df_ = df_.apply(pd.value_counts)
+        except TypeError:
+            df_ = df_.applymap(str)
+            df_ = df_.apply(pd.value_counts)
         data = []
         for i in range(df_.shape[0]):
             trace_temp = go.Bar(
