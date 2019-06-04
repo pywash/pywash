@@ -104,7 +104,7 @@ class SharedDataFrame:
                 print("{} and {} have common columns names".format(self, other_sdf))
             return True
         # Find columns with the same unique values
-        if len(self._find_common_column_values(other_sdf)[0]) > 0:
+        if len(self.find_common_column_values(other_sdf)[0]) > 0:
             return True
         return False
 
@@ -115,7 +115,7 @@ class SharedDataFrame:
                 return True
         return False
 
-    def _find_common_column_values(self, other_sdf) -> tuple:
+    def find_common_column_values(self, other_sdf) -> tuple:
         """
         Finds all columns from this and another SharedDataFrame that contain the exact same values
         """
@@ -130,7 +130,7 @@ class SharedDataFrame:
                     other_common_columns.append(other_column)
         return common_columns, other_common_columns
 
-    def merge(self, other_sdf):
+    def auto_merge(self, other_sdf):
         """ Merges, if possible, another SharedDataFrame with this DataFrame """
         if not self.is_mergeable(other_sdf):
             raise NotMergableError(
@@ -138,12 +138,18 @@ class SharedDataFrame:
         elif self._has_common_column_names(other_sdf):
             return self.data.merge(other_sdf.get_dataframe())
         else:
-            left_columns, right_columns = self._find_common_column_values(other_sdf)
+            left_columns, right_columns = self.find_common_column_values(other_sdf)
             return self.data.merge(other_sdf.get_dataframe(),
                                    left_on=left_columns, right_on=right_columns)
 
     def merge_into(self, other_sdf):
         """ Merges another SharedDataFrame into the current DataFrame """
+
+        self.data = self.auto_merge(other_sdf)
+
+    def merge_on_columns(self, other_sdf, self_columns: list, other_columns: list):
+        pass
+
         self.data = self.merge(other_sdf)
 
     # BandB functions #####
@@ -177,3 +183,4 @@ class SharedDataFrame:
         algorithms = [algorithms[i] for i in setting]
         df_sorted, df_styled = identify_outliers(self.data, self.data.columns, algorithms)
         return df_sorted
+
