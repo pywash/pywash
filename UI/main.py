@@ -393,7 +393,7 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
 
         return layout_boxplot(data)
 
-    if button_clicked == 'distribution':
+    if button_clicked == 'distribution' and selected_column is not None:
         df_dropped = df_[selected_column].dropna()
         try:
             return layout_histoplot(df_dropped, selected_column)
@@ -418,7 +418,7 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
 
         return layout_distriplot(data)
 
-    if button_clicked == 'par_coords':
+    if button_clicked == 'par_coords' and selected_column is not None:
         df_numeric = df_.select_dtypes(include=[np.number])
         df_cat = df_.select_dtypes(include=['category', 'bool'])
 

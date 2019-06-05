@@ -32,7 +32,7 @@ def infer_feature_type(feature):
         The data type of the given feature/attribute.
     """
 
-    types = ["datetime64", "float64", "int64", "object"]
+    types = ["datetime64[ns]", "float64", "int64", "object"]
     weights = [0, 0, 0, 0]  # Weights corresponding to the data types
     feature_len = len(feature)
 

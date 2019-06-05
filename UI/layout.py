@@ -59,6 +59,7 @@ def upload_component():
                     title='Load the dataset from the internet'),
     ])
 
+
 def merge_component(datasets):
     return html.Div([
         html.H5('Dataset merger'),
@@ -98,16 +99,46 @@ def band_tabs(df, all_datasets, locked):
     else:
         types = df.dtypes
     return [dcc.Tabs(id="tabs-cleaning", value='BandC', children=[
-                dcc.Tab(id='bandC_tab', label='Band C', value='BandC',
-                        children=layout_bandC(all_datasets)),
-                dcc.Tab(id='BandA_tab', label='Band B', value='BandB',
-                        children=layout_bandB(pd.DataFrame(types, columns=['d_type'])),
-                        disabled=locked),
-                dcc.Tab(id='BandB_tab', label='Band A', value='BandA',
-                        children=layout_bandA(), disabled=locked),
-                dcc.Tab(id='plotstab', label='Plots', value='Plots',
-                        children=layout_plots(), disabled=locked),
-            ])]
+        dcc.Tab(id='bandC_tab', label='Band C', value='BandC',
+                children=layout_bandC(all_datasets),
+                style={
+                    'backgroundColor': '#ffcece',
+                },
+                selected_style={
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#ff8080',
+                    'borderTop': '3px solid #e80d0d',
+                }
+                ),
+        dcc.Tab(id='BandB_tab', label='Band B', value='BandB',
+                children=layout_bandB(pd.DataFrame(types, columns=['d_type'])),
+                disabled=locked, style={
+                'backgroundColor': '#FFFFD1',
+            },
+                selected_style={
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#fff79a',
+                    'borderTop': '3px solid #ffdd00',
+                }),
+        dcc.Tab(id='BandS_tab', label='Band A', value='BandA',
+                children=layout_bandA(), disabled=locked,
+                style={
+                    'backgroundColor': '#C3FFBA',
+                },
+                selected_style={
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#7FFF81',
+                    'borderTop': '3px solid #00A900',
+                }
+                ),
+        dcc.Tab(id='plotstab', label='Plots', value='Plots',
+                children=layout_plots(), disabled=locked,
+                selected_style={
+                    'fontWeight': 'bold',
+                    'borderTop': '3px solid #1975fa',
+                }
+                ),
+    ])]
 
 
 def data_table(filename: str, df):
@@ -184,7 +215,7 @@ def DATA_DIV(filename, df, all_datasets):
         html.Div([], id='dummy'),
         info,
         html.Div(id='cleaning-tabs-container',
-                 children=band_tabs(df, all_datasets, filename=='main')),
+                 children=band_tabs(df, all_datasets, filename == 'main')),
         data,
         export
     ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'})
@@ -253,7 +284,7 @@ def layout_bandB(columntypes):
     dtypes = [str(i) for i in dtypes]
     columntypes['d_type'] = dtypes
     columntypes = columntypes.transpose()
-    pandas_types = ['object', 'float64', 'int64', 'bool', 'category', 'datetime64']
+    pandas_types = ['object', 'float64', 'int64', 'bool', 'category', 'datetime64[ns]']
     return html.Div([
         dcc.Markdown('''###### Data types'''),
         dash_table.DataTable(
@@ -266,7 +297,7 @@ def layout_bandB(columntypes):
             column_static_dropdown=[
                 {"id": i, 'dropdown': [{'label': j, 'value': j} for j in pandas_types]} for i in
                 columntypes.columns],
-            style_cell={'textAlign': 'center', "padding": "5px"},
+            style_cell={'textAlign': 'center'},
         ),
         dcc.Markdown('''###### Missing values'''),
         html.Div(id='missing-status'),
@@ -342,7 +373,8 @@ def layout_distriplot(data):
 
 
 def layout_histoplot(data, selected_column):
-    return dcc.Graph(figure=ff.create_distplot([data], [selected_column], bin_size=[1 + 3.322 * math.log(len(data))]), id='graphic')
+    return dcc.Graph(figure=ff.create_distplot([data], [selected_column], bin_size=[1 + 3.322 * math.log(len(data))]),
+                     id='graphic')
 
 
 def layout_parcoordsplot(data):
