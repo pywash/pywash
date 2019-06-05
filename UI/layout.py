@@ -9,6 +9,7 @@ from UI.main import app
 
 
 def layout_main(datasets):
+    # TODO Move logos to top of screen
     scaling_factor_images = 0.3
     return html.Div([
         html.H2("Welcome to the Pywash browser interface"),
@@ -33,25 +34,34 @@ def layout_main(datasets):
     ])
 
 
-def pref_merge_component(datasets):
+def layout_bandC(datasets):
     return html.Div([
-        html.H5("Dataset merger:"),
-        html.Div([
-            dcc.Dropdown(
-                id='dropdown-merging',
-                options=[{'label': x, 'value': x} for x in datasets.get_names()],
-                multi=True,
-                placeholder='Select 2 or more datasets to merge',
-                style={'width': "50%"}
-            ),
-            html.Button('Submit', id='button-merge')
-        ])
+        upload_component(),
+        merge_component(datasets),
     ])
 
 
+def upload_component():
+    return html.Div([
+        html.H5("Upload a new dataset"),
+        dcc.Markdown("You can **click and select** a dataset locally\n"
+                     "or **drag and drop** the file in the box underneath"),
+        dcc.Upload(
+            id='upload-data',
+            multiple=True,
+            children=[html.Button('Upload File')]),
+        html.P("You can also load an online dataset by copying the link below"),
+        dcc.Textarea(id='upload-url',
+                     placeholder='Paste an online url...',
+                     style={'width': '100%'}),
+        html.Button('Submit url',
+                    id='upload-url-submit',
+                    title='Load the dataset from the internet'),
+    ])
+
 def merge_component(datasets):
     return html.Div([
-        html.H5('Dataset merger:'),
+        html.H5('Dataset merger'),
         html.Div([
             html.Div([
                 dcc.Dropdown(id='dropdown-merger-1',
@@ -82,22 +92,26 @@ def merge_component(datasets):
     ])
 
 
-def DATA_DIV(filename, df):
+def band_tabs(df, all_datasets, locked):
+    if df is None:
+        types = None
+    else:
+        types = df.types
+    return [dcc.Tabs(id="tabs-cleaning", value='BandC', children=[
+                dcc.Tab(id='bandC_tab', label='Band C', value='BandC',
+                        children=layout_bandC(all_datasets)),
+                dcc.Tab(id='BandA_tab', label='Band B', value='BandB',
+                        children=layout_bandB(pd.DataFrame(types, columns=['d_type'])),
+                        disabled=locked),
+                dcc.Tab(id='BandB_tab', label='Band A', value='BandA',
+                        children=layout_bandA(), disabled=locked),
+                dcc.Tab(id='plotstab', label='Plots', value='Plots',
+                        children=layout_plots(), disabled=locked),
+            ])]
+
+
+def data_table(filename: str, df):
     return html.Div([
-        html.Div([], id='dummy'),
-        html.Div([
-            html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
-            html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))
-        ], id='data-quality',
-            style={'marginBottom': 25, 'marginTop': 25}),
-        html.Div(id='cleaning-tabs-container', children=[
-            dcc.Tabs(id="tabs-cleaning", value='BandB', children=[
-                dcc.Tab(id='BandA_tab', label='BandB', value='BandB',
-                        children=layout_bandB(pd.DataFrame(df.dtypes, columns=['d_type']))),
-                dcc.Tab(id='BandB_tab', label='BandA', value='BandA', children=layout_bandA()),
-                dcc.Tab(id='plotstab', label='Plots', value='Plots', children=layout_plots()),
-            ]),
-        ]),
         html.H5(filename),
         dcc.Store(id='memory-output'),
         dash_table.DataTable(
@@ -130,13 +144,50 @@ def DATA_DIV(filename, df):
             style_filter={'backgroundColor': '#DCDCDC',
                           'font-size': 'large'},
         ),
+    ])
+
+
+def export_component():
+    return html.Div([
         html.A(html.Button('Download current data', id='download-button'), id='download-link',
                download="cleandata.csv",
                href="",
                target="_blank"),
         html.Div(id='datatable-interactivity-container')
-    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'}
-    )
+    ])
+
+
+def DATA_DIV(filename, df, all_datasets):
+    """
+    Contains the total layout for the tabs
+    In order: Info & Quality of dataset, The band tabs, a data table, some export functions
+    Note: When the 'add dataset' tab is selected, only the tabs can be shown and only band C
+
+    :param filename: String name of the dataset
+    :param df: Pandas dataframe of the selected dataset (None if on 'add dataset' tab)
+    :param all_datasets: Dataset object containing all loaded datasets
+    :return: The total layout for the selected main tab
+    """
+    if df is None:
+        data = None
+        info = None
+        export = None
+    else:
+        data = data_table(filename=filename, df=df)
+        info = html.Div([
+            html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
+            html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))
+        ], id='data-quality',
+            style={'marginBottom': 25, 'marginTop': 25})
+        export = export_component()
+    return html.Div([
+        html.Div([], id='dummy'),
+        info,
+        html.Div(id='cleaning-tabs-container',
+                 children=band_tabs(df, all_datasets, filename=='main')),
+        data,
+        export
+    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'})
 
 
 def layout_bandA():

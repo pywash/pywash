@@ -13,32 +13,13 @@ from UI.storage import DataSets
 import numpy as np
 
 UI_data = DataSets()
+# TODO Create logger to keep track of all processes
 
 app = dash.Dash(__name__, assets_folder='./assets')
 app.config['suppress_callback_exceptions'] = True
 app.title = 'PyWash'
 
-app.layout = html.Div(
-    [
-        dcc.Upload(
-            id='upload-data',
-            children=html.Div([
-                'Drag and Drop or ',
-                html.A('Select Files')
-            ]),
-            style={
-                'width': '100%',
-                'height': '60px',
-                'lineHeight': '60px',
-                'borderWidth': '1px',
-                'borderStyle': 'dashed',
-                'borderRadius': '5px',
-                'textAlign': 'center',
-                'margin': '10px'
-            },
-            # Allow multiple files to be uploaded
-            multiple=True
-        ),
+app.layout = html.Div([
         # Section to store popups in client browser
         # TODO move Dialogs to layout file
         html.Div(children=[sd_material_ui.Dialog(id='pop-up',
@@ -52,7 +33,12 @@ app.layout = html.Div(
                                                  children=None,
                                                  # actions=[html.H3('OK'), html.H3('Nah man')]
                                                  )]),
-        html.Div(id='tabs_container', children=[dcc.Tabs(id='tabs')]),
+        html.Div(id='tabs_container',
+                 children=[dcc.Tabs(id='tabs',
+                                    value='main',
+                                    children=[dcc.Tab(id='main',
+                                                      label='Add New Dataset',
+                                                      value='main')])]),
         html.Div(id='output-data-upload'),
     ])
 
@@ -121,14 +107,12 @@ def upload_data(n_clicks, contents: list,
 
     def create_tab_interface(tabs: list, warning=None):
         """ Creates the tabs object that the main function should return """
-        return dcc.Tabs(id='tabs', value='main', children=tabs), warning
-
+        return dcc.Tabs(id='tabs', children=tabs), warning
+    print("THIS HAS BEEN FIRED")
     ctx = dash.callback_context
-    print(ctx.triggered)
-    print(contents)
     last_event = ctx.triggered[0]['prop_id'].split('.')[0]
     if current_tabs is None:
-        current_tabs = [dcc.Tab(id='main', label='Main', value='main')]
+        current_tabs = [dcc.Tab(id='main', label='Add New Dataset', value='main')]
     if last_event == 'upload-data':
         # A dataset was uploaded
         if filenames is None:
@@ -140,7 +124,7 @@ def upload_data(n_clicks, contents: list,
                 # Load all datasets one by one
                 new_dataset = SharedDataFrame(file_path=filenames[i],
                                               contents=contents.pop(),
-                                              verbose=True)
+                                              verbose=False)
                 # If a dataset is already loaded, load with an appended name
                 name_appendix = 1
                 temp_name = new_dataset.name
@@ -151,10 +135,14 @@ def upload_data(n_clicks, contents: list,
                 # Add the dataset to our storage system
                 UI_data.add_dataset(new_dataset.name, new_dataset)
                 filenames[i] = new_dataset.name
-            # Add filenames to the tabs
+            # Find the 'add dataset' tab
+            main_index = len(current_tabs) - 1
+            # Add new filenames to the tabs
             created_tabs = [dcc.Tab(label=name, value=name)
                             for name in filenames]
             current_tabs.extend(created_tabs)
+            # Remove the 'add dataset' tab from teh list and add it back to the back
+            current_tabs.append(current_tabs.pop(main_index))
             return create_tab_interface(current_tabs)
 
     elif last_event == 'button-merge':
@@ -186,16 +174,16 @@ def upload_data(n_clicks, contents: list,
              'type': 'Tab', 'namespace': 'dash_core_components'})
         current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
         return create_tab_interface(current_tabs)
+    return create_tab_interface(current_tabs)
 
 
 @app.callback(Output('output-data-upload', 'children'),
               [Input('tabs', 'value')])
 def render_data(tab):
     if UI_data.get_dataset(tab) is None:
-        # TODO, CREATE MAIN PAGE
-        return layout_main(UI_data)
+        return DATA_DIV(tab, None, UI_data)
     else:
-        return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe())
+        return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe(), UI_data)
 
 
 @app.callback(
