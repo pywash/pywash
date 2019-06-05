@@ -96,7 +96,7 @@ def band_tabs(df, all_datasets, locked):
     if df is None:
         types = None
     else:
-        types = df.types
+        types = df.dtypes
     return [dcc.Tabs(id="tabs-cleaning", value='BandC', children=[
                 dcc.Tab(id='bandC_tab', label='Band C', value='BandC',
                         children=layout_bandC(all_datasets)),

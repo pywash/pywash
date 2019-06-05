@@ -105,10 +105,10 @@ def upload_data(n_clicks, contents: list,
                 data_columns_1: list, data_columns_2: list):
     """ Callback to add/remove datasets from memory and update the tabs """
 
-    def create_tab_interface(tabs: list, warning=None):
+    def create_tab_interface(tabs: list, selected_tab: str = 'main', warning=None):
         """ Creates the tabs object that the main function should return """
-        return dcc.Tabs(id='tabs', children=tabs), warning
-    print("THIS HAS BEEN FIRED")
+        return dcc.Tabs(id='tabs', value=selected_tab, children=tabs), warning
+
     ctx = dash.callback_context
     last_event = ctx.triggered[0]['prop_id'].split('.')[0]
     if current_tabs is None:
@@ -141,9 +141,9 @@ def upload_data(n_clicks, contents: list,
             created_tabs = [dcc.Tab(label=name, value=name)
                             for name in filenames]
             current_tabs.extend(created_tabs)
-            # Remove the 'add dataset' tab from teh list and add it back to the back
+            # Remove the 'add dataset' tab from the list and add it back to the back
             current_tabs.append(current_tabs.pop(main_index))
-            return create_tab_interface(current_tabs)
+            return create_tab_interface(current_tabs, selected_tab=filenames[0])
 
     elif last_event == 'button-merge':
         # Datasets were submitted to be merged
@@ -151,8 +151,9 @@ def upload_data(n_clicks, contents: list,
         # TODO Fix this part, I changed the merging process
         if merging_dataset_1 is None or merging_dataset_2 is None:
             # TODO Develop warning a bit more
-            return create_tab_interface(current_tabs, [html.H1('Not enough datasets selected'),
-                                                       html.P('You must select at least 2 datasets to merge')])
+            return create_tab_interface(current_tabs,
+                                        warning= [html.H1('Not enough datasets selected'),
+                                                  html.P('You must select at least 2 datasets to merge')])
 
         dataset1 = UI_data.get_dataset(merging_dataset_1)
         dataset2 = UI_data.get_dataset(merging_dataset_2)
@@ -172,8 +173,12 @@ def upload_data(n_clicks, contents: list,
             {'props': {'children': None,
                        'label': merging_dataset_2, 'value': merging_dataset_2},
              'type': 'Tab', 'namespace': 'dash_core_components'})
+        # Find the 'add dataset' tab
+        main_index = len(current_tabs) - 1
         current_tabs.append(dcc.Tab(label=merged_sdf.name, value=merged_sdf.name))
-        return create_tab_interface(current_tabs)
+        # Remove the 'add dataset' tab from the list and add it back to the back
+        current_tabs.append(current_tabs.pop(main_index))
+        return create_tab_interface(current_tabs, merged_sdf.name)
     return create_tab_interface(current_tabs)
 
 
