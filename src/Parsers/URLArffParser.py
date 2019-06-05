@@ -1,12 +1,16 @@
-import pandas as pd
-import requests
-from csv import QUOTE_NONE, QUOTE_MINIMAL
 from src.Parsers.Parser import Parser
-# Import the automatic csv dialect detection package
-from src.Parsers import ccsv
+import requests
+import urllib.request as req
+from csv import QUOTE_NONE, QUOTE_MINIMAL
+import pandas as pd
+import arff
+import io
+#from scipy.io import arff
+import time
 
 
-class URLCSV(Parser):
+
+class URLARFF(Parser):
     """
     A CSV Parser that can automatically detect the correct csv format of online datasets.
     """
@@ -14,10 +18,13 @@ class URLCSV(Parser):
         return self.read_data()
 
     def detect_dialect(self):
+        self.verbose = True
         self.name = self.name.split('/')[-1]
-        if self.verbose:
-            print("Detection dialect ...")
+
         content = self.decode_page()
+        #print(content)
+        #arff.load(content)
+        """
         try:
             dialect = ccsv.Sniffer().sniff(content, verbose=self.verbose)
             if self.verbose:
@@ -29,12 +36,20 @@ class URLCSV(Parser):
                 print("Found dialect: " + str(dialect))
 
         except ccsv.Error:
-            print("No result from CleverCSV")
+            print("No result from CleverCSV")"""
 
     def decode_page(self):
         """ Get the contents of a page, assuming UTF-8 """
         # TODO Create encoding detection for online files
+        results = req.urlopen(self.path)
+        print(results.read().decode('utf-8'))
+        print(str(results.read().decode('utf-8')))
+        time.sleep(0.2)
+        #print(arff.loads(str(results.read().decode('utf-8'))))
+        #print(arff.load(io.StringIO(results.read().decode('utf-8'))))
         page = requests.get(self.path)
+        print(page.content.replace('\r\n', '\n'))
+        print(arff.load(page.content.replace('\r\n', '\n')))
         return page.content.decode('utf-8')
 
     def read_data(self):
@@ -52,14 +67,10 @@ class URLCSV(Parser):
         df.to_csv(file_path)
 
 
-if __name__ == "__main__":
-    test_1 = "https://raw.githubusercontent.com/agh-glk/pyconpl2013-nlp/" \
-             "37f6f50a45fc31c1a5ad25010fff681a8ce645b8/gsm.csv"
-    test_2 = "https://raw.githubusercontent.com/queq/just-stuff/" \
-             "c1b8714664cc674e1fc685bd957eac548d636a43/pov/TopFixed/build/project_r_pad.csv"
-    # URLCSV appears not to work on test 2.
-    p = URLCSV(test_1, verbose=True)
-    x = p.parse()
-    print()
-    print(x.head(5))
-    print(x.shape)
+if __name__ == '__main__':
+    # Test files
+    # https://raw.githubusercontent.com/renatopp/arff-datasets/master/boolean/xor.arff
+    # https://github.com/renatopp/arff-datasets/blob/master/agridata/eucalyptus.arff
+    xxx = URLARFF("https://raw.githubusercontent.com/renatopp/arff-datasets/master/boolean/xor.arff")
+    #arf = URLARFF("https://github.com/renatopp/arff-datasets/blob/master/agridata/eucalyptus.arff",
+    #              verbose=True)
