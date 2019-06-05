@@ -91,18 +91,21 @@ def suggest_merge_columns(dataset_name1: str, dataset_name2: str) -> tuple and l
 @app.callback([Output('tabs_container', 'children'),
                Output('pop-up', 'children')],
               [Input('button-merge', 'n_clicks'),
-               Input('upload-data', 'contents')],
+               Input('upload-data', 'contents'),
+               Input('upload-url-submit', 'n_clicks')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified'),
-               State('tabs', 'children'),
+               State('tabs', 'children'),  # current_tabs
                State('dropdown-merger-1', 'value'),  # Name of the first dataset to merge
                State('dropdown-merger-2', 'value'),  # Name of the second dataset to merge
                State('checklist-merger-1', 'values'),  # Column names from the first dataset
-               State('checklist-merger-2', 'values')])  # Column names from the second dataset
-def upload_data(n_clicks, contents: list,
+               State('checklist-merger-2', 'values'),  # Column names from the second dataset
+               State('upload-url', 'value')])
+def upload_data(n_clicks, contents: list, url_submit_clicks,
                 filenames: list, dates: list, current_tabs: list,
                 merging_dataset_1: str, merging_dataset_2: str,
-                data_columns_1: list, data_columns_2: list):
+                data_columns_1: list, data_columns_2: list,
+                url_link: str):
     """ Callback to add/remove datasets from memory and update the tabs """
 
     def create_tab_interface(tabs: list, selected_tab: str = 'main', warning=None):
@@ -145,6 +148,33 @@ def upload_data(n_clicks, contents: list,
             current_tabs.append(current_tabs.pop(main_index))
             return create_tab_interface(current_tabs, selected_tab=filenames[0])
 
+    elif last_event == 'upload-url-submit':
+        # A link to a dataset was given to be uploaded
+        if url_link is None:
+            return create_tab_interface(current_tabs)
+
+        # Load the datasets into the Dataset object for storage
+        print('Loading dataset from: {}'.format(url_link))
+        # Load the dataset
+        new_dataset = SharedDataFrame(file_path=url_link, verbose=False)
+        # If a dataset is already loaded, load with an appended name
+        name_appendix = 1
+        temp_name = new_dataset.name
+        while temp_name in UI_data.keys():
+            temp_name = new_dataset.name + '_{}'.format(name_appendix)
+            name_appendix += 1
+        new_dataset.name = temp_name
+        # Add the dataset to our storage system
+        UI_data.add_dataset(new_dataset.name, new_dataset)
+        # Find the 'add dataset' tab
+        main_index = len(current_tabs) - 1
+        # Add new filenames to the tabs
+        created_tabs = [dcc.Tab(label=new_dataset.name, value=new_dataset.name)]
+        current_tabs.extend(created_tabs)
+        # Remove the 'add dataset' tab from the list and add it back to the back
+        current_tabs.append(current_tabs.pop(main_index))
+        return create_tab_interface(current_tabs, selected_tab=new_dataset.name)
+
     elif last_event == 'button-merge':
         # Datasets were submitted to be merged
         # Test for mergeability, merge and remove left-overs
@@ -183,12 +213,13 @@ def upload_data(n_clicks, contents: list,
 
 
 @app.callback(Output('output-data-upload', 'children'),
-              [Input('tabs', 'value')])
-def render_data(tab):
+              [Input('tabs', 'value')],
+              [State('tabs', 'children')])
+def render_data(tab, current_tabs):
     if UI_data.get_dataset(tab) is None:
-        return DATA_DIV(tab, None, UI_data)
+        return DATA_DIV(tab, None, current_tabs)
     else:
-        return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe(), UI_data)
+        return DATA_DIV(tab, UI_data.get_dataset(tab).get_dataframe(), current_tabs)
 
 
 @app.callback(

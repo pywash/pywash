@@ -49,7 +49,7 @@ def upload_component():
         dcc.Upload(
             id='upload-data',
             multiple=True,
-            children=[html.Button('Upload File')]),
+            children=[html.Button('Upload File', title='Load a dataset from your local drive')]),
         html.P("You can also load an online dataset by copying the link below"),
         dcc.Textarea(id='upload-url',
                      placeholder='Paste an online url...',
@@ -61,12 +61,14 @@ def upload_component():
 
 
 def merge_component(datasets):
+    dataset_names = [dataset['props']['value'] for dataset in datasets
+                     if dataset['props']['value'] != 'main']
     return html.Div([
         html.H5('Dataset merger'),
         html.Div([
             html.Div([
                 dcc.Dropdown(id='dropdown-merger-1',
-                             options=[{'label': x, 'value': x} for x in datasets.get_names()],
+                             options=[{'label': x, 'value': x} for x in dataset_names],
                              multi=False,
                              placeholder='Select a dataset to merge'),
                 dcc.Checklist(id='checklist-merger-1',
@@ -78,7 +80,7 @@ def merge_component(datasets):
             ),
             html.Div([
                 dcc.Dropdown(id='dropdown-merger-2',
-                             options=[{'label': x, 'value': x} for x in datasets.get_names()],
+                             options=[{'label': x, 'value': x} for x in dataset_names],
                              multi=False,
                              placeholder='Select a dataset to merge'),
                 dcc.Checklist(id='checklist-merger-2',
@@ -188,7 +190,7 @@ def export_component():
     ])
 
 
-def DATA_DIV(filename, df, all_datasets):
+def DATA_DIV(filename, df, all_local_datasets):
     """
     Contains the total layout for the tabs
     In order: Info & Quality of dataset, The band tabs, a data table, some export functions
@@ -196,7 +198,7 @@ def DATA_DIV(filename, df, all_datasets):
 
     :param filename: String name of the dataset
     :param df: Pandas dataframe of the selected dataset (None if on 'add dataset' tab)
-    :param all_datasets: Dataset object containing all loaded datasets
+    :param all_local_datasets: Dataset object containing all loaded datasets
     :return: The total layout for the selected main tab
     """
     if df is None:
@@ -215,7 +217,7 @@ def DATA_DIV(filename, df, all_datasets):
         html.Div([], id='dummy'),
         info,
         html.Div(id='cleaning-tabs-container',
-                 children=band_tabs(df, all_datasets, filename == 'main')),
+                 children=band_tabs(df, all_local_datasets, filename == 'main')),
         data,
         export
     ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'})
