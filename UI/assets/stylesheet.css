@@ -137,10 +137,26 @@ body {
   line-height: 1.6;
   font-weight: 400;
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: rgb(50, 50, 50);
-  border: 4pc solid;
-  border-image: radial-gradient(transparent, transparent, transparent, #1a96db);
-  border-image-slice: 100;
+  border: 4pc transparent;
+  background-image: linear-gradient(
+    to top,
+    hsl(195.13, 100%, 45.1%) 0%,
+    hsla(195.13, 100%, 45.1%, 0.813) 0%,
+    hsla(195.13, 100%, 45.1%, 0.651) 0.2%,
+    hsla(195.13, 100%, 45.1%, 0.512) 0.8%,
+    hsla(195.13, 100%, 45.1%, 0.394) 1.9%,
+    hsla(195.13, 100%, 45.1%, 0.296) 3.7%,
+    hsla(195.13, 100%, 45.1%, 0.216) 6.4%,
+    hsla(195.13, 100%, 45.1%, 0.152) 10.2%,
+    hsla(195.13, 100%, 45.1%, 0.102) 15.2%,
+    hsla(195.13, 100%, 45.1%, 0.064) 21.6%,
+    hsla(195.13, 100%, 45.1%, 0.037) 29.6%,
+    hsla(195.13, 100%, 45.1%, 0.019) 39.4%,
+    hsla(195.13, 100%, 45.1%, 0.008) 51.2%,
+    hsla(195.13, 100%, 45.1%, 0.002) 65.1%,
+    hsla(195.13, 100%, 45.1%, 0) 81.3%,
+    hsla(195.13, 100%, 45.1%, 0) 100%
+  );
 }
 
 
@@ -201,7 +217,7 @@ input[type="button"] {
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
-  background-color: transparent;
+  background-color: white;
   border-radius: 4px;
   border: 1px solid #bbb;
   cursor: pointer;

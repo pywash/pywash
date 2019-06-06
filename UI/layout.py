@@ -209,7 +209,7 @@ def DATA_DIV(filename, df, all_local_datasets):
         data = data_table(filename=filename, df=df)
         info = html.Div([
             html.Div('Current Data Quality: {}'.format('B'), style={'color': 'green', 'fontSize': 20}),
-            html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)))
+            html.Div('Rows: {} Columns: {}'.format(len(df.index), len(df.columns)), id='data-info')
         ], id='data-quality',
             style={'marginBottom': 25, 'marginTop': 25})
         export = export_component()
@@ -220,7 +220,7 @@ def DATA_DIV(filename, df, all_local_datasets):
                  children=band_tabs(df, all_local_datasets, filename == 'main')),
         data,
         export
-    ], style={'rowCount': 2, 'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'})
+    ], style={'rowCount': 2, 'width': "100%", 'margin-left': 'auto', 'margin-right': 'auto'})
 
 
 def layout_bandA():
@@ -234,7 +234,7 @@ def layout_bandA():
             ],
             placeholder="Select a preset",
             id='outlier_preset',
-            style={'width': "30%"}
+            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
         ),
         dcc.Dropdown(
             options=[
@@ -252,10 +252,10 @@ def layout_bandA():
             multi=True,
             placeholder="Select at least 2",
             id='outlier_custom_setting',
-            style={'width': "50%"}
+            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
         ),
         html.Button('Detect outliers!', id='submit_outlier'),
-        dcc.Markdown('''###### Scaling'''),
+        dcc.Markdown('''###### Feature Scaling'''),
         dcc.RadioItems(
             options=[
                 {'label': 'normalize', 'value': 'normalize'},
@@ -269,7 +269,7 @@ def layout_bandA():
             multi=True,
             placeholder="Select columns to scale",
             id='scale_selection',
-            style={'width': "50%"}
+            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
         ),
         dcc.Input(
             id='scale_range',
@@ -306,14 +306,13 @@ def layout_bandB(columntypes):
         dcc.Dropdown(
             id='dropdown-missing',
             options=[
-                {'label': 'n/a', 'value': 'n/a'},
-                {'label': 'na', 'value': 'na'},
-                {'label': '--', 'value': '--'},
+                {'label': 'N/A', 'value': 'N/A'},
+                {'label': 'NA', 'value': 'NA'},
                 {'label': '?', 'value': '?'},
             ],
             multi=True,
-            value=['n/a', 'na', '--', '?'],
-            style={'width': "50%"}
+            value=['N/A', 'NA', '?'],
+            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
 
         ),
         html.Button('Add Option', id='add-missing'),
@@ -330,7 +329,7 @@ def layout_bandB(columntypes):
             labelStyle={'display': 'inline-block'}
         ),
         html.Button('Fix missing values!', id='submit_missing'),
-    ], style={'marginBottom': 10, 'marginTop': 10})
+    ], style={'marginBottom': 10, 'marginTop': 10, 'overflowX': 'auto','overflowY': 'hidden'})
 
 
 def layout_plots():
@@ -340,7 +339,7 @@ def layout_plots():
         dcc.Dropdown(
             placeholder="Select columns to plot",
             id='plot-selection',
-            style={'width': "50%"}
+            style={'width': "50%", 'margin': '5px'}
         ),
         html.Button('distribution', id='distribution'),
         html.Button('Parallel coordinates', id='par_coords'),

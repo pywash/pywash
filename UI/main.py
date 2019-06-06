@@ -40,7 +40,7 @@ app.layout = html.Div([
                                                       label='Add New Dataset',
                                                       value='main')])]),
         html.Div(id='output-data-upload'),
-    ])
+    ], style={'width': "85%", 'margin-left': 'auto', 'margin-right': 'auto'})
 
 
 @app.callback(Output('pop-up', 'open'),
@@ -353,15 +353,18 @@ def on_data_set_table(data, current_tab):
 
 
 @app.callback(Output('missing-status', 'children'),
-              [Input('datatable', 'data')])
-def missing_status(data):
+              [Input('datatable', 'data'),
+               Input('dropdown-missing', 'value')],)
+def missing_status(data, custom_na):
     df = pd.DataFrame(data)
-    df = df.replace(r'^\s*$', np.nan, regex=True)
-    if pd.isnull(df).values.any():
-        return html.Div('Status: {}'.format('Missing data detected!'),
+    df = df.replace(custom_na, np.nan)
+    df = df.replace([r'^\s*$'], np.nan, regex=True)
+    flag = pd.isnull(df).values
+    if flag.any():
+        return html.Div('Status: Missing data detected! {} empty cells'.format((flag).sum()),
                         style={'color': 'red', 'fontSize': 15})
     else:
-        return html.Div('Status: {}'.format('No missing data detected'),
+        return html.Div('Status: No missing data detected',
                         style={'color': 'green', 'fontSize': 15})
 
 
@@ -377,12 +380,13 @@ def preset_outliers(value):
 
 
 @app.callback(
-    Output('dropdown-missing', 'options'),
-    [Input('add-missing', 'n_clicks')],
+    [Output('dropdown-missing', 'options'),
+     Output('dropdown-missing', 'value')],
+    [Input('add-missing', 'n_clicks'),],
     [State('input-missing', 'value'),
-     State('dropdown-missing', 'options')],
-)
-def add_missing_character(click, new_value, current_options):
+     State('dropdown-missing', 'options'),
+     State('dropdown-missing', 'value')],)
+def add_missing_character(click, new_value, current_options, current_values):
     try:
         ctx = dash.callback_context
         button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -391,7 +395,8 @@ def add_missing_character(click, new_value, current_options):
 
     if button_clicked == 'add-missing':
         current_options.append({'label': new_value, 'value': new_value})
-        return current_options
+        current_values.append(new_value)
+        return current_options, current_values
     return current_options
 
 

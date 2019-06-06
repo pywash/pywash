@@ -364,11 +364,12 @@ def handle_missing(df, setting='mar', na_values=['n/a', 'na', '--', '?']):
         Numpy array where missing values have been cleaned.
     """
     df = df.replace(r'^\s*$', np.nan, regex=True)
+    df = df.replace(na_values, np.nan)
     if setting == 'remove':
         return df.dropna()
     flag = identify_missing(df, na_values)
     df_numeric = df.select_dtypes(include=[np.number])
     if flag:
-        features_new, Xy_filled = clean_missing(df_numeric.columns, df_numeric, setting)
-        df[features_new] = pd.DataFrame(Xy_filled)
+        features_new, df_filled = clean_missing(df_numeric.columns, df_numeric, setting)
+        df[features_new] = pd.DataFrame(df_filled)
     return df
