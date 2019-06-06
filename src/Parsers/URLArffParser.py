@@ -16,10 +16,7 @@ class URLARFF(Parser):
     def detect_dialect(self):
         if self.verbose:
             print('Loading arff file from internet')
-        try:
-            arff_dict = self.decode_page()
-        except:
-            print('Arff file request failed')
+        arff_dict = self.decode_page()
 
         self.name = arff_dict['relation']
         self.description = arff_dict['description']
@@ -31,9 +28,6 @@ class URLARFF(Parser):
         # TODO Create encoding detection for online files
         results = req.urlopen(self.path)
         return arff.load(io.StringIO(results.read().decode('utf-8')))
-
-    def export(self, df, file_path: str):
-        df.to_csv(file_path)
 
 
 if __name__ == '__main__':

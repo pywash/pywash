@@ -186,6 +186,12 @@ def export_component():
                download="cleandata.csv",
                href="",
                target="_blank"),
+        dcc.Dropdown(id= 'download-type',
+                     placeholder='Select export file type',
+                     multi=False,
+                     style={'width': '50%'},
+                     options=[{'label': 'CSV', 'value': 'csv'},
+                              {'label': 'Arff', 'value': 'arff'}]),
         html.Div(id='datatable-interactivity-container')
     ])
 

@@ -327,14 +327,18 @@ def update_datatable_styling(data):
 
 
 @app.callback(
-    Output('download-link', 'href'),
-    [Input('datatable', 'derived_virtual_data'),
-     Input('download-button', 'n_clicks')])
-def update_download_link(data, n_clicks):
-    if n_clicks is not None:
-        df_download = pd.DataFrame(data)
-        return "data:text/csv;charset=utf-8," + \
-               urllib.parse.quote(df_download.to_csv(index=False, encoding='utf-8'))
+    [Output('download-link', 'href'),
+     Output('download-link', 'download')],
+    [Input('download-button', 'n_clicks')],
+    [State('tabs', 'value'),
+     State('download-type', 'value')]
+)
+def update_download_link(n_clicks, current_tab, file_type):
+    if current_tab is 'main':
+        return None, None
+    data_to_export = UI_data.get_dataset(current_tab)
+    return (data_to_export.export_string(file_type),
+            'clean.' + data_to_export.name + '.{}'.format(file_type))  # clean.NAME.TYPE
 
 
 @app.callback([Output('scale_selection', 'options'),

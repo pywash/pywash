@@ -9,10 +9,10 @@ class DataSets:
     def add_dataset(self, filename, sdf: SharedDataFrame):
         self.datasets.update({filename: sdf})
 
-    def get_datasets(self):
+    def get_datasets(self) -> dict:
         return self.datasets
 
-    def get_dataset(self, filename):
+    def get_dataset(self, filename) -> SharedDataFrame:
         return self.datasets.get(filename)
 
     def get_names(self) -> list:

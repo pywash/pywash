@@ -69,13 +69,6 @@ class Parser:
         """
         self.__parameters__ = None
 
-    def export(self, df: DataFrame, file_path: str):
-        """ Download the dataset locally
-        :param file_path: The local path to save the dataset to
-        :return:
-        """
-        raise NotImplementedError(
-            'This method has not been implemented for this parser, {}'.format(self.__class__.__name__))
 
     @property
     def get_dialect(self):

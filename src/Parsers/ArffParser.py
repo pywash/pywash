@@ -37,13 +37,6 @@ class Arff(Parser):
         self.attributes = weka['attributes']
         self.data = weka['data']
 
-    def export(self, df: DataFrame, file_path: str):
-        arff_file = {'relation': self.name,
-                     'description': self.description,
-                     'attributes': self.attributes,
-                     'data': self.data}
-        arff.dump(arff_file, open(file_path, 'w'))
-
 
 if __name__ == '__main__':
     test = Arff('C:/AAA_School/Assignments/BEP/Datasets/Arff Files/glass_nomissing_science.arff',

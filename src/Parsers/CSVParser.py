@@ -60,10 +60,6 @@ class CSV(Parser):
                            quotechar=self.__parameters__.quotechar,
                            escapechar=self.__parameters__.escapechar)
 
-    def export(self, df, file_path: str):
-        df.to_csv(file_path)
-
-
 
 if __name__ == "__main__":
     data = CSV(file_path="C://AAA_School/Assignments/BEP/Datasets/Test.csv", verbose=True).parse()

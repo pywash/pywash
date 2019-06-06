@@ -3,9 +3,12 @@ from src.BandA.OutlierDetector import identify_outliers
 from src.BandB.DataTypes import discover_type_heuristic
 from src.BandB.MissingValues import handle_missing
 from src.Parsers.ParserUtil import assign_parser
+from src.Parsers.Exports import *
 from src.Exceptions import *
 from pandas.core.frame import DataFrame
 import pandas as pd
+
+supported_export_filetypes = ['csv', 'arff']
 
 
 class SharedDataFrame:
@@ -85,12 +88,19 @@ class SharedDataFrame:
         """ Return the band value of the dataset """
         return self.score
 
-    def export(self, file_path: str):
-        """ Download the dataset locally
-        :param file_path: The local path to save the dataset to
-        :return:
+    def export_string(self, file_type) -> str:
+        """ Returns a downloadable string of the dataset with a specified file type
+        :param file_type: The file type to save the dataset as
+        :return: String dataset with download capacities
         """
-        self.parser.export(self.data, file_path)
+        if file_type not in supported_export_filetypes:
+            raise AttributeError(
+                'Selected file type {} is not supported for exports'.format(file_type))
+        elif file_type == 'csv':
+            return export_csv(self.data)
+        elif file_type == 'arff':
+            return export_arff(self.name, self.data,
+                               self.parser.attributes, self.parser.description)
 
     # Merge functions #####
     def is_mergeable(self, other_sdf) -> bool:
