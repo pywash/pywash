@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -14,7 +16,7 @@ from pyod.models.iforest import IForest
 from pyod.models.lscp import LSCP
 
 
-def identify_outliers(df, features, algorithms):
+def identify_outliers(df, features, algorithms = ['Local Outlier Factor (LOF)']):
     """Cleans the outliers.
 
     Outlier detection using LSCP: Locally selective combination in parallel outlier ensembles.
@@ -86,7 +88,12 @@ def identify_outliers(df, features, algorithms):
                    'One-class SVM (OCSVM)': OCSVM(),
                    }
 
-    selected_classifiers = [classifiers[x] for x in algorithms]
+    if 'Local Outlier Factor (LOF)' in algorithms and len(algorithms) == 1:
+        selected_classifiers = []
+        for i in range(50):
+            selected_classifiers.append(LOF(n_neighbors=random.randint(10, 150)))
+    else:
+        selected_classifiers = [classifiers[x] for x in algorithms]
 
     clf = LSCP(selected_classifiers, contamination=contamination)
     clf.fit(X)

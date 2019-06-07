@@ -234,9 +234,8 @@ def layout_bandA():
         dcc.Markdown('''###### Outlier Detection'''),
         dcc.Dropdown(
             options=[
-                {'label': 'Fast', 'value': 'a'},
-                {'label': 'Regular', 'value': 'b'},
-                {'label': 'Full', 'value': 'c'},
+                {'label': 'Recommended', 'value': 'a'},
+                {'label': 'Full', 'value': 'b'},
             ],
             placeholder="Select a preset",
             id='outlier_preset',
@@ -256,7 +255,7 @@ def layout_bandA():
                 {'label': 'One-class SVM (OCSVM)', 'value': 9},
             ],
             multi=True,
-            placeholder="Select at least 2",
+            placeholder="Select at least 2 or LOF",
             id='outlier_custom_setting',
             style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
         ),

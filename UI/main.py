@@ -376,11 +376,10 @@ def missing_status(data, custom_na):
               [Input('outlier_preset', 'value')])
 def preset_outliers(value):
     if value == 'a':
-        return list(range(4))
+        return [7]
     if value == 'b':
-        return list(range(8))
-    if value == 'c':
         return list(range(10))
+
 
 
 @app.callback(
