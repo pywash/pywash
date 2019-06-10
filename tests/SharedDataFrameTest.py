@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.SharedDataFrame import SharedDataFrame
+from src.PyWash import SharedDataFrame
 from src.Exceptions import *
 import pandas as pd
 

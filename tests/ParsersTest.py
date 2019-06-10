@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.SharedDataFrame import SharedDataFrame
+from src.PyWash import SharedDataFrame
 from src.Parsers import *
 from pathlib import Path
 from pandas.core.frame import DataFrame

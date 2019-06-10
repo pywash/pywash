@@ -1,4 +1,4 @@
-from src.SharedDataFrame import SharedDataFrame
+from src.PyWash import SharedDataFrame
 
 
 class DataSets:

@@ -8,7 +8,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import sd_material_ui
 from UI.layout import *
-from src.SharedDataFrame import SharedDataFrame
+from src.PyWash import SharedDataFrame
 from UI.storage import DataSets
 import numpy as np
 
