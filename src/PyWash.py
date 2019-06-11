@@ -1,5 +1,5 @@
 from src.BandA.Normalization import normalize
-from src.BandA.OutlierDetector import identify_outliers
+from src.BandA.OutlierDetector import identify_outliers, estimate_contamination
 from src.BandB.DataTypes import discover_type_heuristic
 from src.BandB.MissingValues import handle_missing
 from src.Parsers.ParserUtil import assign_parser
@@ -180,7 +180,7 @@ class SharedDataFrame:
         self.data = normalize(self.data, columns, setting, tuple(int(i) for i in scale_range.split(',')))
         return self.data
 
-    def outlier(self, setting):
+    def outlier(self, setting, contamination):
         algorithms = ['Isolation Forest', 'Cluster-based Local Outlier Factor', 'Minimum Covariance Determinant (MCD)',
                       'Principal Component Analysis (PCA)', 'Angle-based Outlier Detector (ABOD)',
                       'Histogram-base Outlier Detection (HBOS)', 'K Nearest Neighbors (KNN)',
@@ -191,6 +191,9 @@ class SharedDataFrame:
             raise ValueError('fix missing data first')
 
         algorithms = [algorithms[i] for i in setting]
-        df_sorted, df_styled = identify_outliers(self.data, self.data.columns, algorithms)
+        df_sorted, df_styled = identify_outliers(self.data, self.data.columns, contamination=contamination,
+                                                 algorithms=algorithms)
         return df_sorted
 
+    def contamination(self):
+        return estimate_contamination(self.data)

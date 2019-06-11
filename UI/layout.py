@@ -186,7 +186,7 @@ def export_component():
                download="cleandata.csv",
                href="",
                target="_blank"),
-        dcc.Dropdown(id= 'download-type',
+        dcc.Dropdown(id='download-type',
                      placeholder='Select export file type',
                      multi=False,
                      style={'width': '50%'},
@@ -232,6 +232,18 @@ def DATA_DIV(filename, df, all_local_datasets):
 def layout_bandA():
     return html.Div([
         dcc.Markdown('''###### Outlier Detection'''),
+        dcc.Markdown('''Contamination'''),
+        dcc.Input(
+            id='contamination',
+            type='number',
+            value=0.1,
+            min=0.001,
+            max=0.5,
+            step=0.001,
+            placeholder='i.e. 0.1'
+        ),
+        html.Button('Estimate contamination', id='submit_contamination'),
+        dcc.Markdown('''Algorithm'''),
         dcc.Dropdown(
             options=[
                 {'label': 'Recommended', 'value': 'a'},
@@ -255,9 +267,9 @@ def layout_bandA():
                 {'label': 'One-class SVM (OCSVM)', 'value': 9},
             ],
             multi=True,
-            placeholder="Select at least 2 or LOF",
+            placeholder="Select at least 2 to use LSCP",
             id='outlier_custom_setting',
-            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5}
+            style={'width': "75%", 'marginBottom': 5, 'marginTop': 5}
         ),
         html.Button('Detect outliers!', id='submit_outlier'),
         dcc.Markdown('''###### Feature Scaling'''),
@@ -334,17 +346,17 @@ def layout_bandB(columntypes):
             labelStyle={'display': 'inline-block'}
         ),
         html.Button('Fix missing values!', id='submit_missing'),
-    ], style={'marginBottom': 10, 'marginTop': 10, 'overflowX': 'auto','overflowY': 'hidden'})
+    ], style={'marginBottom': 10, 'marginTop': 10, 'overflowX': 'auto', 'overflowY': 'hidden'})
 
 
 def layout_plots():
     return html.Div([
         html.Button('Boxplot', id='boxplot'),
-        html.Button('Categorical distribution', id='cat_distribution'),
+        html.Button('Stacked bar chart', id='cat_distribution'),
         dcc.Dropdown(
             placeholder="Select columns to plot",
             id='plot-selection',
-            style={'width': "50%", 'margin': '5px'}
+            style={'width': "50%", 'marginBottom': 5, 'marginTop': 5, }
         ),
         html.Button('distribution', id='distribution'),
         html.Button('Parallel coordinates', id='par_coords'),

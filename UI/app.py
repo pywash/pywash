@@ -233,17 +233,18 @@ def render_data(tab, current_tabs):
      State('dropdown-missing', 'value'),
      State('scale_range', 'value'),
      State('scale_setting', 'value'),
+     State('contamination', 'value'),
      State('tabs', 'value'),
      ])
 def process_input(outlier_submit, scale_submit, missing_submit, outlier_setting,
                   scale_selection, missing_setting, missing_navalues, scale_range, scale_setting,
-                  current_tab):
+                  contamination, current_tab):
     sdf = UI_data.get_dataset(current_tab)
     ctx = dash.callback_context
     button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
     print(button_clicked)
     if button_clicked == 'submit_outlier':
-        return sdf.outlier(outlier_setting).to_dict("records")
+        return sdf.outlier(outlier_setting, float(contamination)).to_dict("records")
     if button_clicked == 'submit_scale' and scale_range is not None and scale_selection is not None:
         return sdf.scale(scale_selection, scale_setting, scale_range).to_dict("records")
     if button_clicked == 'submit_missing':
@@ -358,7 +359,7 @@ def on_data_set_table(data, current_tab):
 
 @app.callback(Output('missing-status', 'children'),
               [Input('datatable', 'data'),
-               Input('dropdown-missing', 'value')],)
+               Input('dropdown-missing', 'value')], )
 def missing_status(data, custom_na):
     df = pd.DataFrame(data)
     df = df.replace(custom_na, np.nan)
@@ -376,19 +377,32 @@ def missing_status(data, custom_na):
               [Input('outlier_preset', 'value')])
 def preset_outliers(value):
     if value == 'a':
-        return [7]
+        return [0, 3, 6]
     if value == 'b':
         return list(range(10))
 
+
+@app.callback(Output('contamination', 'value'),
+              [Input('submit_contamination', 'n_clicks')],
+              [State('tabs', 'value')])
+def estimate_contamination(click, current_tab):
+    try:
+        ctx = dash.callback_context
+        button_clicked = ctx.triggered[0]['prop_id'].split('.')[0]
+    except IndexError:
+        button_clicked = 'None'
+    if button_clicked == 'submit_contamination':
+        sdf = UI_data.get_dataset(current_tab)
+        return sdf.contamination()
 
 
 @app.callback(
     [Output('dropdown-missing', 'options'),
      Output('dropdown-missing', 'value')],
-    [Input('add-missing', 'n_clicks'),],
+    [Input('add-missing', 'n_clicks'), ],
     [State('input-missing', 'value'),
      State('dropdown-missing', 'options'),
-     State('dropdown-missing', 'value')],)
+     State('dropdown-missing', 'value')], )
 def add_missing_character(click, new_value, current_options, current_values):
     try:
         ctx = dash.callback_context
@@ -459,7 +473,7 @@ def plots(boxplot_click, distri_click, cat_distri_click, par_clicks, selected_co
 
     if button_clicked == 'par_coords' and selected_column is not None:
         df_numeric = df_.select_dtypes(include=[np.number])
-        df_cat = df_.select_dtypes(include=['category', 'bool'])
+        df_cat = df_.select_dtypes(include=['category'])
 
         dimension = []
         dimension += [{'label': str(i), 'values': df_numeric[i]} for i in df_numeric.columns]

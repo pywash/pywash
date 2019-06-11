@@ -16,7 +16,32 @@ from pyod.models.iforest import IForest
 from pyod.models.lscp import LSCP
 
 
-def identify_outliers(df, features, algorithms = ['Local Outlier Factor (LOF)']):
+def estimate_contamination(df):
+    df_numeric = df.select_dtypes(include=[np.number])
+    total_length = len(df_numeric)  # total length of the dataframe, used for computing contamination later
+    dict_outliers = {}
+    df_union = pd.DataFrame()
+    # to estimate the propotion of outliers
+    for i, col in enumerate(df_numeric.columns):
+        # first detect outliers in each column
+        # keep only the ones that are out of +3 to -3 standard deviations in the column 'Data'.
+        dict_outliers[col] = df_numeric[~(np.abs(df_numeric[col] - df_numeric[col].mean()) < (
+                3 * df_numeric[col].std()))]  # ~ means the other way around
+        # combine all the rows containing outliers in one feature
+        df_union = df_union.combine_first(dict_outliers[col])
+
+    max_outliers = len(df_union)
+    contamination = max_outliers / total_length
+
+    # handle edge cases
+    if contamination == 0:
+        contamination = 0.001
+    elif contamination > 0.5:
+        contamination = 0.5
+    return contamination
+
+
+def identify_outliers(df, features, contamination=0.1, algorithms=['Isolation Forest']):
     """Cleans the outliers.
 
     Outlier detection using LSCP: Locally selective combination in parallel outlier ensembles.
@@ -30,6 +55,9 @@ def identify_outliers(df, features, algorithms = ['Local Outlier Factor (LOF)'])
 
     df : DataFrame
         The data to be examined.
+
+    contamination : float in (0., 0.5)
+        the proportion of outliers in the data set.
 
     algorithms: list
         list with at the names of least 2 algorithms to be used during LSCP. A list of supported algorithms:
@@ -52,50 +80,26 @@ def identify_outliers(df, features, algorithms = ['Local Outlier Factor (LOF)'])
     """
 
     df_numeric = df.select_dtypes(include=[np.number])  # keep only numeric type features
-    total_length = len(df_numeric)  # total length of the dataframe, used for computing contamination later
-
-    dict_outliers = {}
-    df_union = pd.DataFrame()
-    # to estimate the propotion of outliers
-    for i, col in enumerate(df_numeric.columns):
-        # first detect outliers in each column
-        # keep only the ones that are out of +3 to -3 standard deviations in the column 'Data'.
-        dict_outliers[col] = df_numeric[~(np.abs(df_numeric[col] - df_numeric[col].mean()) < (
-            3 * df_numeric[col].std()))]  # ~ means the other way around
-        # combine all the rows containing outliers in one feature
-        df_union = df_union.combine_first(dict_outliers[col])
-
-    max_outliers = len(df_union)
-    contamination = max_outliers / total_length
-
-    # handle edge cases
-    if contamination == 0:
-        contamination = 0.001
-    elif contamination > 0.5:
-        contamination = 0.5
-
     X = np.asarray(df_numeric)
 
-    classifiers = {'Isolation Forest': IForest(),
-                   'Cluster-based Local Outlier Factor': CBLOF(),
-                   'Minimum Covariance Determinant (MCD)': MCD(),
-                   'Principal Component Analysis (PCA)': PCA(),
-                   'Angle-based Outlier Detector (ABOD)': ABOD(),
-                   'Histogram-base Outlier Detection (HBOS)': HBOS(),
-                   'K Nearest Neighbors (KNN)': knn(),
-                   'Local Outlier Factor (LOF)': LOF(),
-                   'Feature Bagging': FeatureBagging(),
-                   'One-class SVM (OCSVM)': OCSVM(),
+    classifiers = {'Isolation Forest': IForest,
+                   'Cluster-based Local Outlier Factor': CBLOF,
+                   'Minimum Covariance Determinant (MCD)': MCD,
+                   'Principal Component Analysis (PCA)': PCA,
+                   'Angle-based Outlier Detector (ABOD)': ABOD,
+                   'Histogram-base Outlier Detection (HBOS)': HBOS,
+                   'K Nearest Neighbors (KNN)': knn,
+                   'Local Outlier Factor (LOF)': LOF,
+                   'Feature Bagging': FeatureBagging,
+                   'One-class SVM (OCSVM)': OCSVM,
                    }
 
-    if 'Local Outlier Factor (LOF)' in algorithms and len(algorithms) == 1:
-        selected_classifiers = []
-        for i in range(50):
-            selected_classifiers.append(LOF(n_neighbors=random.randint(10, 150)))
+    if len(algorithms) > 1:
+        selected_classifiers = [classifiers[x]() for x in algorithms]
+        clf = LSCP(selected_classifiers, contamination=contamination)
     else:
-        selected_classifiers = [classifiers[x] for x in algorithms]
+        clf = classifiers[algorithms[0]](contamination=contamination)
 
-    clf = LSCP(selected_classifiers, contamination=contamination)
     clf.fit(X)
     y_pred = clf.predict(X)
 
