@@ -289,7 +289,7 @@ def update_sdf(data, current_tab):
         raise PreventUpdate
     sdf = UI_data.get_dataset(current_tab)
     sdf.set_data(pd.DataFrame(data))
-    pass
+    return None
 
 
 @app.callback([Output('datatable', 'columns'),
@@ -330,12 +330,11 @@ def update_datatable_styling(data):
 @app.callback(
     [Output('download-link', 'href'),
      Output('download-link', 'download')],
-    [Input('download-button', 'n_clicks')],
-    [State('tabs', 'value'),
-     State('download-type', 'value')]
-)
-def update_download_link(n_clicks, current_tab, file_type):
-    if current_tab is 'main':
+    [Input('tabs', 'value'),
+     Input('download-type', 'value'),
+     Input('dummy', 'children')])
+def update_download_link(current_tab, file_type, did_data_change):
+    if current_tab is 'main' or file_type is None:
         return None, None
     data_to_export = UI_data.get_dataset(current_tab)
     return (data_to_export.export_string(file_type),
