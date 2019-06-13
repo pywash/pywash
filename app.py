@@ -15,7 +15,8 @@ import numpy as np
 UI_data = DataSets()
 # TODO Create logger to keep track of all processes
 
-app = dash.Dash(__name__, assets_folder='./assets')
+app = dash.Dash(__name__, assets_folder='UI/assets')
+server = app.server  # Reveal server to outside
 app.config['suppress_callback_exceptions'] = True
 app.title = 'PyWash'
 

@@ -5,5 +5,4 @@ Created as part of a Bachelor Final Project for the study Data Science at the Te
 
 ## Authors
 * [Yuri Maas](https://github.com/yuriisthebest)
-* [Hero de Smeth](https://github.com/yuriisthebest)
 * [Laurens Castelijns](https://github.com/yuriisthebest)
