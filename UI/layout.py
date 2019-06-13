@@ -5,10 +5,9 @@ import plotly.graph_objs as go
 import plotly.figure_factory as ff
 import pandas as pd
 import math
-from app import app
 
 
-def layout_main(datasets):
+def layout_main(datasets, app):
     # TODO Move logos to top of screen
     scaling_factor_images = 0.3
     return html.Div([
