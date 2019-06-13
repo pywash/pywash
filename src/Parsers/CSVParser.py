@@ -1,9 +1,9 @@
 from src.Parsers.Parser import Parser
 import pandas as pd
+# Import the automatic csv dialect detection package
+import clevercsv as ccsv
 from io import StringIO
 from csv import QUOTE_NONE, QUOTE_MINIMAL
-# Import the automatic csv dialect detection package
-from src.Parsers import ccsv
 
 
 class CSV(Parser):

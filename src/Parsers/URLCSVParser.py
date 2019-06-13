@@ -1,9 +1,9 @@
 import pandas as pd
 import requests
+# Import the automatic csv dialect detection package
+import clevercsv as ccsv
 from csv import QUOTE_NONE, QUOTE_MINIMAL
 from src.Parsers.Parser import Parser
-# Import the automatic csv dialect detection package
-from src.Parsers import ccsv
 
 
 class URLCSV(Parser):
