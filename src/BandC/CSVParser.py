@@ -1,4 +1,4 @@
-from src.Parsers.Parser import Parser
+from src.BandC.Parser import Parser
 import pandas as pd
 # Import the automatic csv dialect detection package
 import clevercsv as ccsv

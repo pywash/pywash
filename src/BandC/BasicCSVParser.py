@@ -1,6 +1,6 @@
 from pandas import read_csv
 from pandas.core.frame import DataFrame
-from src.Parsers.Parser import Parser
+from src.BandC.Parser import Parser
 # TODO, delete this file, deprecated
 DeprecationWarning('Deprecated class')
 

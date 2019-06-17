@@ -1,6 +1,6 @@
 from unittest import TestCase
 from src.PyWash import SharedDataFrame
-from src.Parsers import *
+from src.BandC import *
 from pathlib import Path
 from pandas.core.frame import DataFrame
 

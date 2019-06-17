@@ -1,4 +1,4 @@
-from src.Parsers.Parser import Parser
+from src.BandC.Parser import Parser
 import urllib.request as req
 import pandas as pd
 import arff

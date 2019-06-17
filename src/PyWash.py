@@ -2,8 +2,8 @@ from src.BandA.Normalization import normalize
 from src.BandA.OutlierDetector import identify_outliers, estimate_contamination
 from src.BandB.DataTypes import discover_type_heuristic
 from src.BandB.MissingValues import handle_missing
-from src.Parsers.ParserUtil import assign_parser
-from src.Parsers.Exports import *
+from src.BandC.ParserUtil import assign_parser
+from src.BandC.Exports import *
 from src.Exceptions import *
 from pandas.core.frame import DataFrame
 import pandas as pd

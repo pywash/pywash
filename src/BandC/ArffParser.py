@@ -1,4 +1,4 @@
-from src.Parsers.Parser import Parser
+from src.BandC.Parser import Parser
 import arff
 import pandas as pd
 from pandas.core.frame import DataFrame

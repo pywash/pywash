@@ -1,4 +1,4 @@
-from src.Parsers import *
+from src.BandC import *
 from src.Exceptions import FileFormatNotFound
 
 __parsers__ = {'.csv': CSV, '.arff': Arff}

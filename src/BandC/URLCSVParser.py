@@ -3,7 +3,7 @@ import requests
 # Import the automatic csv dialect detection package
 import clevercsv as ccsv
 from csv import QUOTE_NONE, QUOTE_MINIMAL
-from src.Parsers.Parser import Parser
+from src.BandC.Parser import Parser
 
 
 class URLCSV(Parser):
