@@ -158,9 +158,8 @@ class SharedDataFrame:
         self.data = self.auto_merge(other_sdf)
 
     def merge_on_columns(self, other_sdf, self_columns: list, other_columns: list):
-        pass
-
-        self.data = self.merge(other_sdf)
+        self.data = self.data.merge(other_sdf.get_dataframe(),
+                                    left_on=self_columns, right_on=other_columns)
 
     # BandB functions #####
     def missing(self, setting, na_values):

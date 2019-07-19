@@ -38,8 +38,11 @@ class Parser:
             # Decode the contents into the dataset string TODO Automatic (effective) decoding
             content_type, content_string = self.contents.split(',')
             decoded = base64.b64decode(content_string)
-            self.encoding = chardet.detect(decoded)['encoding']  # Doesn't do anything yet
-            self.decoded_contents = decoded.decode('iso-8859-1')  # TODO Use encoding here
+            try:
+                self.decoded_contents = decoded.decode('iso-8859-1')  # TODO Use encoding here
+            except:
+                self.encoding = chardet.detect(decoded)['encoding']
+                self.decoded_contents = decoded.decode(self.encoding)
             if self.verbose:
                 print(self.contents)
                 print(self.decoded_contents[:100])
