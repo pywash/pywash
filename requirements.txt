@@ -5,7 +5,7 @@ chardet==3.0.4
 numpy==1.16.3
 sd_material_ui==3.0.2
 typing==3.6.6
-requests==2.21.0
+requests==2.31.0
 dash==0.43.0
 dash_table==3.7.0
 pyod==0.7.0
